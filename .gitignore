@@ -1,0 +1,5 @@
+# Lokale Claude-Code-Einstellungen
+.claude/settings.local.json
+
+# Python
+__pycache__/
