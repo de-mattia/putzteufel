@@ -1,0 +1,192 @@
+rules_version = '2';
+
+// Putzteufel – Firestore-Sicherheitsregeln
+//
+// Grundsatz: Zugriff nur für Geräte, die an den Haushalt gekoppelt sind, d. h.
+// households/{hid}/devices/{uid} existiert für die anonyme Anmeldung des Geräts.
+// Rollen eines Geräts: 'person' (darf schreiben), 'anzeige' (nur lesen, z. B. der
+// Fernseher) und 'neu' (gerade beigetreten, wählt noch „Ich bin …“; nur lesen).
+//
+// Einspielen: npx firebase-tools deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function angemeldet() {
+      return request.auth != null;
+    }
+
+    function haushaltPfad(hid) {
+      return /databases/$(database)/documents/households/$(hid);
+    }
+
+    function eigenesGeraetPfad(hid) {
+      return /databases/$(database)/documents/households/$(hid)/devices/$(request.auth.uid);
+    }
+
+    function mitgliedPfad(hid, mid) {
+      return /databases/$(database)/documents/households/$(hid)/members/$(mid);
+    }
+
+    // Es gibt nur einen echten Haushalt: Er legt beim Gründen dieses Dokument mit an,
+    // danach ist jede weitere Neuanlage gesperrt (auch von Test-Haushalten).
+    function einrichtungPfad() {
+      return /databases/$(database)/documents/einrichtung/abgeschlossen;
+    }
+
+    function gekoppelt(hid) {
+      return angemeldet() && exists(eigenesGeraetPfad(hid));
+    }
+
+    function istPerson(hid) {
+      return gekoppelt(hid) && get(eigenesGeraetPfad(hid)).data.rolle == 'person';
+    }
+
+    // Gerät hat den Haushalt angelegt (nach dem Batch ist es als Gründer eingetragen).
+    function istGruender(hid) {
+      return angemeldet() && getAfter(haushaltPfad(hid)).data.erstelltVon == request.auth.uid;
+    }
+
+    // Nur wahr im Batch, der den Haushalt neu anlegt (vorher gab es ihn nicht).
+    function gruendet(hid) {
+      return istGruender(hid) && !exists(haushaltPfad(hid));
+    }
+
+    function neu() {
+      return request.resource.data;
+    }
+
+    function nurFelder(felder) {
+      return neu().keys().hasOnly(felder);
+    }
+
+    function geaendert() {
+      return neu().diff(resource.data).affectedKeys();
+    }
+
+    // Zeichenvorrat ohne verwechselbare Zeichen (0, 1, i, l, o)
+    function gueltigeKennung(text) {
+      return text is string && text.matches('^[2-9a-hjkmnp-z]{6}$');
+    }
+
+    function gueltigerName(text, laenge) {
+      return text is string && text.size() > 0 && text.size() <= laenge;
+    }
+
+    function gueltigerWechsel(w) {
+      return w is map
+        && w.keys().hasOnly(['wochentag', 'stunde', 'minute'])
+        && w.wochentag is int && w.wochentag >= 0 && w.wochentag <= 6
+        && w.stunde is int && w.stunde >= 0 && w.stunde <= 23
+        && w.minute is int && w.minute >= 0 && w.minute <= 59;
+    }
+
+    function gueltigesMitglied() {
+      return nurFelder(['name', 'farbe', 'reihenfolge', 'einstellungen', 'bild'])
+        && gueltigerName(neu().name, 30)
+        && neu().farbe is string && neu().farbe.matches('^#[0-9a-fA-F]{6}$');
+    }
+
+    match /einrichtung/{dok} {
+      allow read: if false;
+      allow create: if dok == 'abgeschlossen'
+        && nurFelder(['haushalt', 'erstelltAm'])
+        && neu().erstelltAm == request.time
+        && gruendet(neu().haushalt)
+        && getAfter(haushaltPfad(neu().haushalt)).data.get('test', false) == false;
+      allow update, delete: if false;
+    }
+
+    match /households/{hid} {
+      allow get: if gekoppelt(hid);
+      allow list: if false;
+
+      // Das erste Gerät legt den Haushalt an und koppelt sich im selben Batch als Person.
+      // Der echte Haushalt sperrt dabei jede weitere Neuanlage (einrichtung/abgeschlossen);
+      // Test-Haushalte aus der Entwicklung waren nur vorher möglich.
+      allow create: if angemeldet()
+        && !exists(einrichtungPfad())
+        && (neu().get('test', false) == true || existsAfter(einrichtungPfad()))
+        && gueltigeKennung(hid)
+        && nurFelder(['name', 'wochenwechsel', 'erstelltAm', 'erstelltVon', 'test'])
+        && neu().erstelltVon == request.auth.uid
+        && neu().erstelltAm == request.time
+        && gueltigerName(neu().name, 60)
+        && gueltigerWechsel(neu().wochenwechsel)
+        && (!('test' in neu()) || neu().test is bool)
+        && getAfter(eigenesGeraetPfad(hid)).data.rolle == 'person';
+      allow update: if istPerson(hid)
+        && geaendert().hasOnly(['name', 'wochenwechsel'])
+        && gueltigerName(neu().name, 60)
+        && gueltigerWechsel(neu().wochenwechsel);
+      allow delete: if false;
+
+      // Beitrittscode: für Außenstehende nicht lesbar. Die Beitrittsregel unten prüft ihn
+      // per get(). Personen-Geräte dürfen ihn lesen, um den Einladungs-QR-Code zu zeigen.
+      match /geheim/{dok} {
+        allow read: if istPerson(hid);
+        allow create: if dok == 'beitritt' && istGruender(hid)
+          && nurFelder(['code']) && gueltigeKennung(neu().code);
+        allow update: if dok == 'beitritt' && istPerson(hid)
+          && nurFelder(['code']) && gueltigeKennung(neu().code);
+        allow delete: if false;
+      }
+
+      match /members/{mid} {
+        allow read: if gekoppelt(hid);
+        allow create: if (istGruender(hid) || istPerson(hid)) && gueltigesMitglied();
+        allow update: if istPerson(hid) && gueltigesMitglied();
+        allow delete: if false;
+      }
+
+      match /devices/{uid} {
+        allow read: if gekoppelt(hid);
+
+        allow create: if angemeldet()
+          && uid == request.auth.uid
+          && neu().name is string && neu().name.size() <= 40
+          && neu().gekoppeltAm == request.time
+          && (
+            // Beitritt per Einladung: Der Code muss stimmen; die Rolle wird danach gewählt.
+            (nurFelder(['rolle', 'mitglied', 'name', 'gekoppeltAm', 'code'])
+              && neu().rolle == 'neu'
+              && neu().mitglied == null
+              && neu().code == get(/databases/$(database)/documents/households/$(hid)/geheim/beitritt).data.code)
+            // Gründung: das erste Gerät als Person
+            || (nurFelder(['rolle', 'mitglied', 'name', 'gekoppeltAm'])
+              && neu().rolle == 'person'
+              && gruendet(hid)
+              && existsAfter(mitgliedPfad(hid, neu().mitglied)))
+          );
+
+        // „Ich bin …“ wählen (einmal nach dem Beitritt; der Code wird dabei entfernt) oder
+        // als Person die eigene Person wechseln. Eine Anzeige kann sich nicht selbst zur
+        // Person machen – dafür das Gerät entfernen und neu koppeln.
+        allow update: if angemeldet()
+          && uid == request.auth.uid
+          && geaendert().hasOnly(['rolle', 'mitglied', 'name', 'code'])
+          && !('code' in neu())
+          && neu().name is string && neu().name.size() <= 40
+          && (resource.data.rolle == 'neu'
+            || (resource.data.rolle == 'person' && neu().rolle == 'person'))
+          && ((neu().rolle == 'anzeige' && neu().mitglied == null)
+            || (neu().rolle == 'person' && exists(mitgliedPfad(hid, neu().mitglied))));
+
+        // Entfernen: das Gerät selbst (entkoppeln) oder ein Personen-Gerät des Haushalts.
+        allow delete: if angemeldet() && (uid == request.auth.uid || istPerson(hid));
+      }
+
+      match /tasks/{tid} {
+        allow read: if gekoppelt(hid);
+        allow create, update, delete: if istPerson(hid);
+      }
+
+      // Verlauf: nur anhängen, nie ändern oder löschen.
+      match /log/{eid} {
+        allow read: if gekoppelt(hid);
+        allow create: if istPerson(hid);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

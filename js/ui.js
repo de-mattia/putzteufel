@@ -10,6 +10,16 @@ export function el(tag, attribute = {}, ...kinder) {
     else if (name === 'style') Object.entries(wert).forEach(([k, v]) => e.style.setProperty(k, v));
     else e.setAttribute(name, wert === true ? '' : wert);
   }
+  return anhaengen(e, kinder);
+}
+
+// Ersetzt den Inhalt eines Elements; bedingte Kinder (false, null) entfallen wie bei el().
+export function fuelle(e, ...kinder) {
+  e.textContent = '';
+  return anhaengen(e, kinder);
+}
+
+function anhaengen(e, kinder) {
   for (const kind of kinder.flat()) {
     if (kind == null || kind === false) continue;
     e.append(kind instanceof Node ? kind : String(kind));

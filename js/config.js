@@ -1,7 +1,7 @@
 // Zentrale Einstellungen der App.
 
 // Bei jeder Veröffentlichung zusammen mit CACHE_VERSION in sw.js erhöhen.
-export const APP_VERSION = '0.1.1';
+export const APP_VERSION = '0.2.0';
 
 // Firebase-Konfiguration der Web-App „putzteufel-web“ im Projekt putzteufel-b6e23.
 //
@@ -17,9 +17,8 @@ export const firebaseConfig = {
   appId: '1:760228148425:web:00b97fce9ed77a34084918',
 };
 
-// Das Firebase JS SDK wird in Phase 2 per CDN mit fest gepinnter Version geladen,
-// z. B. https://www.gstatic.com/firebasejs/<VERSION>/firebase-app.js
-// Die Version hier eintragen und nur bewusst anheben.
-export const FIREBASE_SDK_VERSION = null;
+// Das Firebase JS SDK wird per CDN mit fest gepinnter Version geladen
+// (https://www.gstatic.com/firebasejs/<VERSION>/…). Nur bewusst anheben.
+export const FIREBASE_SDK_VERSION = '12.19.0';
 
 export const firebaseBereit = () => firebaseConfig !== null && FIREBASE_SDK_VERSION !== null;

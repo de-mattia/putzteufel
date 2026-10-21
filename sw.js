@@ -5,9 +5,11 @@
 // CACHE_VERSION bei jeder Veröffentlichung erhöhen (zusammen mit APP_VERSION in
 // js/config.js): Geöffnete Seiten – etwa der Fernseher – laden dann einmal neu.
 
-const CACHE_VERSION = 'v0.1.1';
+const CACHE_VERSION = 'v0.2.0';
 const CACHE_NAME = `putzteufel-${CACHE_VERSION}`;
 const NETZ_ZEITLIMIT_MS = 4000;
+// Das Firebase SDK liegt unter einer festen Versionsadresse und ändert sich dort nie.
+const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/';
 
 // Alle Pfade relativ zum Service Worker, damit die App unter /putzteufel/ läuft.
 const APP_SHELL = [
@@ -21,11 +23,16 @@ const APP_SHELL = [
   'js/woche.js',
   'js/ui.js',
   'js/config.js',
+  'js/firebase.js',
   'js/demo-daten.js',
+  'js/vendor/uqr.js',
   'js/ansichten/board.js',
   'js/ansichten/meine.js',
   'js/ansichten/einstellungen.js',
-  'icons/icon.svg',
+  'js/ansichten/start.js',
+  'js/ansichten/beitreten.js',
+  'js/ansichten/status.js',
+  'icons/icon-64.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',
@@ -56,10 +63,23 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
-  // Fremde Adressen (ab Phase 2 z. B. Firebase) gehen direkt ans Netz.
+  if (request.url.startsWith(FIREBASE_SDK)) {
+    event.respondWith(cacheZuerst(request));
+    return;
+  }
+  // Alle anderen fremden Adressen (Firestore, Anmeldung) gehen direkt ans Netz.
   if (!request.url.startsWith(self.registration.scope)) return;
   event.respondWith(netzZuerst(event));
 });
+
+async function cacheZuerst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const treffer = await cache.match(request);
+  if (treffer) return treffer;
+  const antwort = await fetch(request);
+  if (antwort.ok) await cache.put(request, antwort.clone());
+  return antwort;
+}
 
 async function netzZuerst(event) {
   const { request } = event;

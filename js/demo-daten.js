@@ -1,13 +1,6 @@
-// PLATZHALTER für Phase 1: Beispieldaten, damit sich das Layout am Handy und
-// am Fernseher beurteilen lässt. Ab Phase 2 kommen die Daten aus Firestore.
-
-export const DEMO_MITGLIEDER = [
-  { id: 'christoph', name: 'Christoph', farbe: '#3b82f6' },
-  { id: 'sandra', name: 'Sandra', farbe: '#a855f7' },
-  { id: 'moira', name: 'Moira', farbe: '#14b8a6' },
-  { id: 'paula', name: 'Paula', farbe: '#f59e0b' },
-  { id: 'laura', name: 'Laura', farbe: '#ec4899' },
-];
+// PLATZHALTER bis Phase 3: Beispielaufgaben, damit sich das Layout am Handy und
+// am Fernseher beurteilen lässt. Mitglieder und Geräte kommen seit Phase 2 aus Firestore;
+// uebernommenVon verweist auf die IDs der Standard-Mitglieder (christoph, sandra, …).
 
 // status: 'offen' | 'uebernommen' | 'erledigt'; uebernommenVon: Mitglieds-ID
 const AUFGABEN = [

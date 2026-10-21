@@ -3,3 +3,8 @@
 
 # Python
 __pycache__/
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firestore-debug.log

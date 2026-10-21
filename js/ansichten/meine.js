@@ -2,11 +2,11 @@
 // Plus-Knopf für eine einmalige Aufgabe.
 
 import {
-  holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, setzeIchBin,
+  holeZustand, abonniere, aktuelleWoche, mitglied, ichBin,
   uebernehmen, zurueckgeben, erledigen, neueEinmaligeAufgabe,
 } from '../store.js';
 import { karten } from '../woche.js';
-import { el, avatar, beispielMarke, wechselText } from '../ui.js';
+import { el, fuelle, avatar, beispielMarke, wechselText } from '../ui.js';
 
 export function meineAufgaben(ziel) {
   const wurzel = el('div', { class: 'seite meine' });
@@ -21,23 +21,27 @@ export function meineAufgaben(ziel) {
 
   const zeichne = () => {
     const zustand = holeZustand();
-    const ich = ichBin();
+    const ich = ichBin() || { id: null, name: '' };
     const woche = aktuelleWoche();
     const alle = karten(zustand.aufgaben, woche.schluessel);
     const beiMir = alle.filter((k) => k.status === 'uebernommen' && k.uebernommenVon === ich.id);
     const offen = alle.filter((k) => k.status === 'offen');
     const erledigt = alle.filter((k) => k.status === 'erledigt');
 
-    wurzel.textContent = '';
-    wurzel.append(
+    fuelle(wurzel,
       el(
         'header',
         { class: 'kopfleiste' },
-        el('img', { class: 'kopfleiste-logo', src: 'icons/icon.svg', alt: '', width: 40, height: 40 }),
+        el('img', { class: 'kopfleiste-logo', src: 'icons/icon-192.png', alt: '', width: 40, height: 40 }),
         el('div', { class: 'kopfleiste-text' }, el('h1', {}, 'Meine Aufgaben'), el('p', {}, `KW ${woche.kw} · Wechsel ${wechselText(woche.ende)}`)),
-        avatar(ich),
+        ich.id && avatar(ich),
       ),
-      zustand.demo && vorschauHinweis(zustand, ich),
+      zustand.haushalt && zustand.haushalt.test && el('p', { class: 'hinweis-beispiel' }, el('strong', {}, 'Test-Haushalt '), '(aus der Entwicklung)'),
+      zustand.demoAufgaben && el(
+        'section',
+        { class: 'hinweis-beispiel' },
+        el('p', {}, el('strong', {}, 'Noch Beispielaufgaben (bis Phase 3). '), 'Übernehmen und Erledigt werden noch nicht gespeichert und sind nur auf diesem Gerät sichtbar.'),
+      ),
       fortschritt(erledigt.length, alle.length),
       abschnitt('Bei mir', beiMir, (k) => aufgabeKarte(k, [
         el('button', { class: 'knopf knopf-gruen', type: 'button', onclick: () => erledigen(k.id, ich.id) }, '✓ Erledigt'),
@@ -52,30 +56,6 @@ export function meineAufgaben(ziel) {
 
   zeichne();
   return abonniere(zeichne);
-}
-
-function vorschauHinweis(zustand, ich) {
-  return el(
-    'section',
-    { class: 'hinweis-beispiel' },
-    el('p', {}, el('strong', {}, 'Vorschau mit Beispieldaten (Phase 1). '), 'Änderungen werden nicht gespeichert und sind nur auf diesem Gerät sichtbar.'),
-    el(
-      'div',
-      { class: 'vorschau-als', role: 'group', 'aria-label': 'Vorschau als' },
-      el('span', {}, 'Ich bin:'),
-      zustand.mitglieder.map((m) => el(
-        'button',
-        {
-          class: 'vorschau-person',
-          type: 'button',
-          'aria-pressed': String(m.id === ich.id),
-          title: m.name,
-          onclick: () => setzeIchBin(m.id),
-        },
-        avatar(m),
-      )),
-    ),
-  );
 }
 
 function fortschritt(erledigt, gesamt) {

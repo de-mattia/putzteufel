@@ -568,6 +568,224 @@ select {
   margin: 0;
 }
 
+/* Start, Beitreten, Laden */
+
+.mitte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 80vh;
+  text-align: center;
+}
+
+.gross-logo {
+  width: 6rem;
+  height: 6rem;
+}
+
+.lade-text {
+  color: var(--text-2);
+}
+
+.meldung {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--flaeche-2);
+}
+
+.meldung-fehler {
+  border: 2px solid var(--rot);
+}
+
+.start-kopf {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 1.5rem 0 1.25rem;
+  text-align: center;
+}
+
+.start-kopf h1 {
+  font-size: 1.9rem;
+}
+
+.start-kopf p,
+.start-gruss {
+  color: var(--text-2);
+}
+
+.start-gruss {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.start-gruss strong {
+  color: var(--text);
+}
+
+.einladung-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.einladung-form input,
+.anlegen-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--linie);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.einladung-form input {
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.einladung-form input::placeholder {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.anlegen-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.anlegen-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.feld-titel {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.feld-fehler {
+  margin-top: 0.5rem;
+  color: var(--rot-tief);
+  font-weight: 600;
+}
+
+.personen-wahl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.person-knopf {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.person-knopf .avatar {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.4rem;
+}
+
+.person-knopf[aria-checked='true'] {
+  border-color: var(--rot);
+  box-shadow: 0 0 0 2px var(--rot);
+}
+
+.person-knopf:disabled {
+  opacity: 0.5;
+}
+
+.knopf-reihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+a.knopf {
+  text-decoration: none;
+}
+
+.knopf-klein {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Einladung */
+
+.qr {
+  width: min(15rem, 100%);
+  padding: 0.5rem;
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.einladungs-code {
+  font-family: ui-monospace, 'Cascadia Mono', 'Roboto Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.geraet-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--flaeche-2);
+  font-size: 1.1rem;
+}
+
+.dieses-geraet {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--flaeche-2);
+  color: var(--text-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Am Fernseher (großer Querformat-Bildschirm) Start- und Beitrittsseite größer zeigen */
+@media (min-width: 1200px) and (orientation: landscape) {
+  html[data-route='/start'],
+  html[data-route='/beitreten'],
+  html[data-route='/status'] {
+    font-size: min(2.2vh, 1.25vw);
+  }
+}
+
+html[data-route='/start'] .navigation,
+html[data-route='/beitreten'] .navigation,
+html[data-route='/status'] .navigation,
+html[data-rolle='anzeige'] .navigation {
+  display: none;
+}
+
 /* Navigation unten */
 
 .navigation {

@@ -1,26 +1,56 @@
 import { starteRouter } from './router.js';
+import { holeZustand, abonniere, starte } from './store.js';
 import { meineAufgaben } from './ansichten/meine.js';
 import { board } from './ansichten/board.js';
 import { einstellungen } from './ansichten/einstellungen.js';
+import { start } from './ansichten/start.js';
+import { beitreten } from './ansichten/beitreten.js';
+import { status } from './ansichten/status.js';
 
 const routen = {
   '/': meineAufgaben,
   '/board': board,
   '/einstellungen': einstellungen,
+  '/start': start,
+  '/beitreten': beitreten,
+  '/status': status,
 };
 
-starteRouter(routen, {
+// Welche Ansicht darf dieses Gerät gerade sehen?
+function umleiten(route) {
+  const { phase, geraet } = holeZustand();
+  if (phase === 'laedt' || phase === 'fehler') return '/status';
+  if (phase === 'ungekoppelt') return route === '/beitreten' ? route : '/start';
+  if (geraet.rolle === 'neu') return '/beitreten';
+  if (geraet.rolle === 'anzeige') return '/board';
+  return route === '/start' || route === '/status' ? '/' : route;
+}
+
+const router = starteRouter(routen, {
   ziel: document.getElementById('ansicht'),
-  beiWechsel(route) {
-    document.documentElement.dataset.route = route;
+  umleiten,
+  beiWechsel(ansicht) {
+    const { geraet } = holeZustand();
+    document.documentElement.dataset.route = ansicht;
+    document.documentElement.dataset.rolle = geraet ? geraet.rolle : 'keine';
     document.querySelectorAll('#navigation a').forEach((a) => {
-      if (a.dataset.route === route) a.setAttribute('aria-current', 'page');
+      if (a.dataset.route === ansicht) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
     window.scrollTo(0, 0);
   },
 });
 
+// Neu entscheiden, sobald sich Ladezustand oder Rolle des Geräts ändern.
+let torSchluessel = 'laedt:';
+abonniere(({ phase, geraet }) => {
+  const schluessel = `${phase}:${geraet ? geraet.rolle : ''}`;
+  if (schluessel === torSchluessel) return;
+  torSchluessel = schluessel;
+  router.neuZeigen();
+});
+
+starte();
 registriereServiceWorker();
 
 function registriereServiceWorker() {

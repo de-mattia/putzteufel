@@ -3,7 +3,7 @@
 
 import { holeZustand, abonniere, aktuelleWoche, mitglied } from '../store.js';
 import { karten } from '../woche.js';
-import { el, avatar, beispielMarke, uhrzeit, datumLang, wechselText, STATUS_NAMEN } from '../ui.js';
+import { el, fuelle, avatar, beispielMarke, uhrzeit, datumLang, wechselText, STATUS_NAMEN } from '../ui.js';
 
 const SPALTEN = ['offen', 'uebernommen', 'erledigt'];
 
@@ -18,8 +18,7 @@ export function board(ziel) {
     const alle = karten(zustand.aufgaben, woche.schluessel);
     const erledigt = alle.filter((k) => k.status === 'erledigt').length;
 
-    wurzel.textContent = '';
-    wurzel.append(
+    fuelle(wurzel,
       kopf(zustand, jetzt, woche, erledigt, alle.length),
       el('div', { class: 'board-spalten' }, SPALTEN.map((status) => spalte(status, alle.filter((k) => k.status === status)))),
       fuss(zustand),
@@ -50,7 +49,7 @@ function kopf(zustand, jetzt, woche, erledigt, gesamt) {
     el(
       'a',
       { class: 'board-marke', href: '#/', title: 'Zu „Meine Aufgaben“' },
-      el('img', { src: 'icons/icon.svg', alt: '', width: 64, height: 64 }),
+      el('img', { src: 'icons/icon-192.png', alt: '', width: 64, height: 64 }),
       el('span', {}, 'Putzteufel'),
     ),
     el(
@@ -59,7 +58,8 @@ function kopf(zustand, jetzt, woche, erledigt, gesamt) {
       el('div', { class: 'board-kw' }, `KW ${woche.kw}`),
       el('div', { class: 'board-wechsel' }, `${datumLang(jetzt)} · Wechsel ${wechselText(woche.ende)}`),
     ),
-    zustand.demo && el('div', { class: 'board-demo' }, 'Beispieldaten'),
+    zustand.haushalt && zustand.haushalt.test && el('div', { class: 'board-demo' }, 'Test'),
+    zustand.demoAufgaben && el('div', { class: 'board-demo' }, 'Beispielaufgaben'),
     el(
       'div',
       { class: 'board-fortschritt' },
@@ -122,7 +122,11 @@ function fuss(zustand) {
       { class: 'legende' },
       zustand.mitglieder.map((m) => el('li', {}, avatar(m), el('span', {}, m.name))),
     ),
-    zustand.demo && el('p', { class: 'board-hinweis' }, 'Vorschau mit Platzhaltern (Phase 1) – noch nicht mit dem Haushalt verbunden'),
+    el('p', { class: 'board-hinweis' }, [
+      zustand.haushalt ? zustand.haushalt.name : '',
+      zustand.demoAufgaben ? 'Aufgaben noch als Beispiele (Phase 3)' : '',
+      zustand.offline ? 'offline' : '',
+    ].filter(Boolean).join(' · ')),
   );
 }
 
