@@ -176,9 +176,9 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
   Browser-Schlüssel des Projekts auf die Websites `https://de-mattia.github.io/*` und `http://localhost:8137/*`
   beschränken. Die Daten schützen weiterhin die Firestore-Regeln; das erschwert nur fremde Nutzung des Schlüssels.
 
-- **Testdaten aus der Entwicklung löschen:** Test-Haushalte heißen „TEST – …“ (`test: true`), löschen z. B. mit
-  `npx firebase-tools@15.34.0 firestore:delete households/<ID> --recursive --project putzteufel-b6e23`.
-  Dazu kommen anonyme Test-Konten unter Authentication → Nutzer (harmlos, können bleiben oder gelöscht werden).
+- **Testdaten aus der Entwicklung:** Die Test-Haushalte (`avwg98`, `uh6erm`, `c489xw`) sind gelöscht. Übrig sind
+  nur anonyme Test-Konten unter Authentication → Nutzer (harmlos, können bleiben oder gelöscht werden). Löschen
+  eines Haushalts samt Unterdaten: `npx firebase-tools@15.34.0 firestore:delete households/<ID> --recursive --project putzteufel-b6e23`.
 - **Regeltests nach der Einrichtung:** `tools/regeln-pruefen.mjs` legt einen Test-Haushalt an – das geht nach der
   Einrichtung nicht mehr. Für spätere Regeländerungen (Phase 3) das Skript auf vorübergehend gekoppelte
   Test-Geräte im echten Haushalt umstellen (ohne `log`-Einträge, da diese nicht löschbar sind).

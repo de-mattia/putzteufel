@@ -38,6 +38,7 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | V18 | **Eigenes App-Icon** von Christoph: Waschbär mit Teufelshörnern, Sprühflasche und Tuch, Schriftzug „Putzteufel“ (Datei `icons/putzteufel-original.png`). Ersetzt das zuvor generierte Icon. |
 | V19 | „Es reicht mir, **einen einzigen Haushalt** zu haben.“ |
 | V20 | Eine Markdown-Datei mit **allen Designentscheidungen**, insbesondere Christophs Vorgaben, anlegen und **alle künftigen Anweisungen** dort eintragen (diese Datei). |
+| V21 | Die drei Test-Haushalte aus der Entwicklung (`avwg98`, `uh6erm`, `c489xw`) löschen – erledigt am 2026-10-21. |
 
 ## 2. Designentscheidungen
 
