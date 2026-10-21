@@ -5,7 +5,7 @@
 // CACHE_VERSION bei jeder Veröffentlichung erhöhen (zusammen mit APP_VERSION in
 // js/config.js): Geöffnete Seiten – etwa der Fernseher – laden dann einmal neu.
 
-const CACHE_VERSION = 'v0.1.0';
+const CACHE_VERSION = 'v0.1.1';
 const CACHE_NAME = `putzteufel-${CACHE_VERSION}`;
 const NETZ_ZEITLIMIT_MS = 4000;
 

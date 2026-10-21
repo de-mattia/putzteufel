@@ -1,7 +1,7 @@
 // #/einstellungen – Gerüst: zeigt, was hier ab Phase 2 einstellbar wird.
 
 import { holeZustand } from '../store.js';
-import { APP_VERSION, firebaseBereit } from '../config.js';
+import { APP_VERSION, firebaseConfig, firebaseBereit } from '../config.js';
 import { WOCHENTAGE, naechsterWechsel } from '../woche.js';
 import { el, avatar, beispielMarke, wechselText } from '../ui.js';
 
@@ -68,7 +68,7 @@ export function einstellungen(ziel) {
         el('dt', {}, 'Version'), el('dd', {}, APP_VERSION),
         el('dt', {}, 'Offline-Speicher'), el('dd', {}, swStatus),
         el('dt', {}, 'Läuft als'), el('dd', {}, window.matchMedia('(display-mode: standalone)').matches ? 'installierte App' : 'Webseite im Browser'),
-        el('dt', {}, 'Datenbank'), el('dd', {}, firebaseBereit() ? 'Firebase eingerichtet' : 'noch nicht eingerichtet (Phase 2)'),
+        el('dt', {}, 'Datenbank'), el('dd', {}, datenbankStatus()),
       )),
   ));
 
@@ -79,6 +79,12 @@ export function einstellungen(ziel) {
   } else {
     swStatus.textContent = 'vom Browser nicht unterstützt';
   }
+}
+
+function datenbankStatus() {
+  if (firebaseBereit()) return `Firebase (${firebaseConfig.projectId})`;
+  if (firebaseConfig) return `Projekt ${firebaseConfig.projectId} eingetragen, Anbindung folgt in Phase 2`;
+  return 'noch nicht eingerichtet (Phase 2)';
 }
 
 function karte(titel, text, ...inhalt) {

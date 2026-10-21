@@ -25,7 +25,16 @@ Sie wird mit jeder Phase fortgeschrieben.
 | Datenbank (ab Phase 2) | **Firebase Firestore** im kostenlosen **Spark-Tarif**: Echtzeit-Listener, Offline-Cache (`persistentLocalCache`) |
 | Firebase SDK | Per CDN (`https://www.gstatic.com/firebasejs/<VERSION>/…`) mit **fest gepinnter Version**, eingetragen in `js/config.js` |
 | Nicht genutzt | **Keine Cloud Functions, kein Firebase Storage** – beides gibt es nur im kostenpflichtigen Blaze-Tarif |
-| Konfiguration | Vorbereitete Stelle: `js/config.js` (`firebaseConfig`, `FIREBASE_SDK_VERSION`). Die Web-Konfiguration ist kein Geheimnis und darf ins öffentliche Repo; geschützt wird über die Firestore-Regeln |
+| Konfiguration | `js/config.js` (`firebaseConfig` ist eingetragen, `FIREBASE_SDK_VERSION` folgt in Phase 2). Die Web-Konfiguration ist kein Geheimnis und darf ins öffentliche Repo; geschützt wird über die Firestore-Regeln |
+
+### Firebase-Projekt (Phase 0, eingerichtet von Christoph)
+
+| Was | Wert |
+| --- | --- |
+| Projekt-ID | **`putzteufel-b6e23`** (Spark-Tarif) |
+| Firestore | Edition Standard, Standort **europe-west3 (Frankfurt)**, Produktionsmodus – ohne eigene Regeln ist alles gesperrt (Lesen ohne Anmeldung → 403 `PERMISSION_DENIED`) |
+| Authentication | Anbieter **„Anonym“** aktiv, `de-mattia.github.io` bei den autorisierten Domains |
+| Web-App | `putzteufel-web`, ohne Firebase Hosting (Hosting bleibt GitHub Pages) |
 
 ### Ordnerstruktur
 
@@ -123,7 +132,7 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 
 | Phase | Inhalt | Stand |
 | --- | --- | --- |
-| 0 – Einrichtung | Firebase-Projekt anlegen (durch Christoph), Web-App registrieren, Firestore und anonyme Anmeldung einschalten | **offen** |
+| 0 – Einrichtung | Firebase-Projekt anlegen (durch Christoph), Web-App registrieren, Firestore und anonyme Anmeldung einschalten | **erledigt** (`putzteufel-b6e23`) |
 | 1 – Gerüst | Statische PWA, Router mit drei Ansichten, Manifest, Service Worker, Icons, Platzhalter-Daten, GitHub Pages | **erledigt** |
 | 2 – Daten & Kopplung | Firebase SDK einbinden, anonyme Anmeldung, Haushalt anlegen, Einladung per Link/QR, „Ich bin …“, Fernseher als Anzeige, Firestore-Regeln, `store.js` auf Firestore umstellen | geplant |
 | 3 – Aufgabenlogik | Übernehmen/Zurückgeben/Erledigt in Firestore, Wochenreset per Transaktion, `log`-Einträge, einmalige Aufgaben | geplant |
@@ -140,6 +149,10 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 - Ausbaustufe „Mein Profil“ mit Profilbild
 
 ## Offene Punkte
+
+- **API-Schlüssel einschränken (empfohlen):** In der Google Cloud Console (APIs & Dienste → Anmeldedaten) den
+  Browser-Schlüssel des Projekts auf die Websites `https://de-mattia.github.io/*` und `http://localhost:8137/*`
+  beschränken. Die Daten schützen weiterhin die Firestore-Regeln; das erschwert nur fremde Nutzung des Schlüssels.
 
 - **Kopplung des Fernsehers:** Einen langen Einladungslink mit der Fernbedienung einzutippen ist mühsam.
   In Phase 2 klären, ob der Fernseher stattdessen einen kurzen Code anzeigt, den ein Handy bestätigt.
