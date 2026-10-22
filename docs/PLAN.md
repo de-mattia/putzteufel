@@ -104,7 +104,8 @@ households/{haushaltId}                             der einzige Haushalt, ID: 6 
   name, wochenwechsel { wochentag (0 = So … 6 = Sa), stunde, minute }, erstelltAm, erstelltVon (uid)
 
 households/{haushaltId}/members/{mitgliedId}        Person, ID z. B. "christoph"
-  name, farbe ("#rrggbb"), reihenfolge, einstellungen { … }, bild (optional, Base64 ~128×128)
+  name, farbe ("#rrggbb"), reihenfolge, einstellungen { … },
+  bild (optional: "data:image/jpeg;base64,…", 128×128, ≤ 100 000 Zeichen; nur die Person selbst darf es setzen)
 
 households/{haushaltId}/devices/{uid}               Gerät
   rolle ("person" | "anzeige" | "neu"), mitglied (mitgliedId | null), name (z. B. "Android-Gerät"),
@@ -125,8 +126,9 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 - Der `log` ist die Grundlage für die spätere Statistik. Regeln: nur `create` (Person oder Anzeige), kein
   `update`/`delete`.
 - Sortierung der Karten: nach Titel.
-- Profilbild (Ausbaustufe „Mein Profil“): beim Hochladen im Browser auf ca. **128×128** verkleinern und als
-  kleines **Base64** direkt im Member-Dokument speichern (kein Firebase Storage nötig).
+- Profilbild (umgesetzt in v0.4.0): Am Handy den eigenen Avatar antippen, Foto wählen; der Browser schneidet es
+  quadratisch zu, verkleinert auf **128×128** und speichert es als JPEG-Data-URL im eigenen Member-Dokument
+  (kein Firebase Storage nötig).
 
 ## Wochenkarten und Wochenwechsel
 
@@ -152,8 +154,8 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 
 | Route | Für | Inhalt |
 | --- | --- | --- |
-| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy); unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein Raster mit so vielen Zeilen, wie passen (10 bei 1080p); darüber hinaus entsteht von selbst eine weitere, gleich breite Kartenspalte – ca. 20 Karten in einer Spalte bleiben so vollständig sichtbar. Wake-Lock, wo unterstützt |
-| `#/` | Handy | **„Meine Aufgaben“**: Gruß mit Avatar, **„Bei mir“** (✓ Erledigt / Zurück) und **„Offen“** (Übernehmen) als schlichte Listen. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
+| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Avatar** der Person (Profilbild oder Initiale im Farbkreis), **Streifen links in der Typ-Farbe** (Wochenaufgabe graublau, einmalig gelb; Legende unten). Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy); unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein Raster mit so vielen Zeilen, wie passen (10 bei 1080p); darüber hinaus entsteht von selbst eine weitere, gleich breite Kartenspalte – ca. 20 Karten in einer Spalte bleiben so vollständig sichtbar. Wake-Lock, wo unterstützt |
+| `#/` | Handy | **„Meine Aufgaben“**: Gruß mit Avatar (antippen = Profilbild wählen), **„Bei mir“** (✓ Erledigt / Zurück) und **„Offen“** (Übernehmen) als schlichte Listen, Zeilen mit Streifen in der Typ-Farbe. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
 | `#/einstellungen` | Handy | **Wochenaufgaben** (✎ umbenennen, ✕ löschen, Hinzufügen), **Handy einladen** (QR-Code, Einladungscode, ein Knopf „Link teilen“ bzw. „Link kopieren“, Code erneuern), **Mitglieder**, **Geräte** (entfernen/entkoppeln), Versionsangabe |
 | `#/start` | neue Geräte | „Ich wurde eingeladen“ mit Feld für den Einladungscode; mit `?einrichten=1` einmalig „Haushalt einrichten“ |
 | `#/beitreten` | neue Geräte | Koppelt per Einladung und fragt „Wer bist du?“ bzw. „Anzeige“ |
@@ -179,7 +181,6 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 - Weitere Rhythmen (z. B. alle zwei Wochen, monatlich)
 - Push-Erinnerungen
 - Rotation (Aufgaben reihum verteilen)
-- Ausbaustufe „Mein Profil“ mit Profilbild
 
 ## Offene Punkte
 

@@ -3,10 +3,10 @@
 
 import {
   holeZustand, abonniere, aktuelleWoche, ichBin,
-  uebernehmen, zurueckgeben, erledigen, aufgabeAnlegen,
+  uebernehmen, zurueckgeben, erledigen, aufgabeAnlegen, profilbildSetzen,
 } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, wechselText } from '../ui.js';
+import { el, fuelle, avatar, wechselText, profilbild } from '../ui.js';
 
 const fehlgeschlagen = (fehler) => {
   console.error(fehler);
@@ -16,7 +16,22 @@ const fehlgeschlagen = (fehler) => {
 export function meineAufgaben(ziel) {
   const wurzel = el('div', { class: 'seite meine' });
   const dialog = neueAufgabeDialog();
-  ziel.append(wurzel, dialog, el('button', {
+  const bildWahl = el('input', {
+    type: 'file',
+    accept: 'image/*',
+    hidden: true,
+    onchange: async (e) => {
+      const datei = e.target.files[0];
+      e.target.value = '';
+      if (!datei) return;
+      try {
+        await profilbildSetzen(await profilbild(datei));
+      } catch (fehler) {
+        fehlgeschlagen(fehler);
+      }
+    },
+  });
+  ziel.append(wurzel, dialog, bildWahl, el('button', {
     class: 'plus-knopf',
     type: 'button',
     'aria-label': 'Einmalige Aufgabe anlegen',
@@ -36,7 +51,13 @@ export function meineAufgaben(ziel) {
       el(
         'header',
         { class: 'kopfleiste' },
-        ich.id && avatar(ich),
+        ich.id && el('button', {
+          class: 'avatar-knopf',
+          type: 'button',
+          title: 'Profilbild ändern',
+          'aria-label': 'Profilbild ändern',
+          onclick: () => bildWahl.click(),
+        }, avatar(ich)),
         el('div', { class: 'kopfleiste-text' },
           el('h1', {}, ich.id ? `Hallo ${ich.name}` : 'Meine Aufgaben'),
           el('p', {}, `KW ${woche.kw} · Wechsel ${wechselText(woche.ende)}`)),
@@ -65,7 +86,7 @@ function abschnitt(titel, liste, zeileBauen, leerText) {
 }
 
 function zeile(k, ...knoepfe) {
-  return el('li', { class: 'zeile' }, el('span', { class: 'zeile-titel' }, k.titel), el('span', { class: 'zeile-knoepfe' }, knoepfe));
+  return el('li', { class: `zeile typ-${k.typ}` }, el('span', { class: 'zeile-titel' }, k.titel), el('span', { class: 'zeile-knoepfe' }, knoepfe));
 }
 
 function neueAufgabeDialog() {

@@ -199,6 +199,12 @@ export function rolleWaehlen(rolle, mitgliedId = null) {
   });
 }
 
+// Profilbild der eigenen Person (die Regeln erlauben nur das eigene).
+export function profilbildSetzen(bild) {
+  const { db, fs } = fb;
+  return fs.updateDoc(fs.doc(db, 'households', zustand.haushaltId, 'members', zustand.geraet.mitglied), { bild });
+}
+
 export async function geraetEntfernen(uid) {
   if (uid === zustand.uid) return entkoppeln();
   const { db, fs } = fb;

@@ -39,19 +39,38 @@ export function textfarbe(hex) {
   return helligkeit > 0.3 ? '#16141f' : '#ffffff';
 }
 
-// Initiale im Farbkreis der Person (leerer Kreis, wenn niemand zugeordnet ist).
+const BILD_PRAEFIX = 'data:image/jpeg;base64,';
+const BILD_GROESSE = 128;
+
+// Profilbild (mit Ring in der Personenfarbe) oder Initiale im Farbkreis der Person;
+// leerer Kreis, wenn niemand zugeordnet ist.
 export function avatar(mitglied) {
   if (!mitglied) return el('span', { class: 'avatar avatar-leer', 'aria-hidden': 'true' });
+  const bild = typeof mitglied.bild === 'string' && mitglied.bild.startsWith(BILD_PRAEFIX) ? mitglied.bild : null;
   return el(
     'span',
     {
-      class: 'avatar',
+      class: bild ? 'avatar avatar-bild' : 'avatar',
       style: { '--farbe': mitglied.farbe, color: textfarbe(mitglied.farbe) },
       title: mitglied.name,
       'aria-label': mitglied.name,
     },
-    mitglied.name.charAt(0).toUpperCase(),
+    bild ? el('img', { src: bild, alt: '' }) : mitglied.name.charAt(0).toUpperCase(),
   );
+}
+
+// Foto quadratisch zuschneiden und auf 128 × 128 verkleinern (JPEG als Data-URL, wenige KB).
+export async function profilbild(datei) {
+  const quelle = await createImageBitmap(datei);
+  const seite = Math.min(quelle.width, quelle.height);
+  const leinwand = document.createElement('canvas');
+  leinwand.width = BILD_GROESSE;
+  leinwand.height = BILD_GROESSE;
+  leinwand.getContext('2d').drawImage(
+    quelle, (quelle.width - seite) / 2, (quelle.height - seite) / 2, seite, seite, 0, 0, BILD_GROESSE, BILD_GROESSE,
+  );
+  quelle.close();
+  return leinwand.toDataURL('image/jpeg', 0.8);
 }
 
 const uhrzeitFormat = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });

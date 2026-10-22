@@ -22,6 +22,10 @@
   --radius: 16px;
   --nav-hoehe: 4.25rem;
 
+  /* Aufgabentypen: Streifen links an Karte bzw. Zeile */
+  --farbe-woche: #8b9bb4;
+  --farbe-einmalig: #e0ae00;
+
   color-scheme: light dark;
 }
 
@@ -37,6 +41,7 @@
     --hinweis-bg: #2e2812;
     --hinweis-rand: #8a7420;
     --hinweis-text: #f3e2a0;
+    --farbe-einmalig: #ffd54a;
   }
 }
 
@@ -102,6 +107,46 @@ select {
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1;
+}
+
+.avatar-bild {
+  overflow: hidden;
+  box-shadow: 0 0 0 0.12em var(--farbe);
+}
+
+.avatar-bild img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-knopf {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.avatar-knopf::after {
+  content: '📷';
+  position: absolute;
+  right: -0.3rem;
+  bottom: -0.3rem;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.typ-woche {
+  --typ-farbe: var(--farbe-woche);
+}
+
+.typ-einmalig {
+  --typ-farbe: var(--farbe-einmalig);
 }
 
 .avatar-leer {
@@ -312,6 +357,11 @@ select {
 
 .gruppe > li + li {
   border-top: 1px solid var(--linie);
+}
+
+.zeile.typ-woche,
+.zeile.typ-einmalig {
+  box-shadow: inset 0.3rem 0 0 var(--typ-farbe);
 }
 
 .zeile-titel {
@@ -867,6 +917,7 @@ html[data-route='/board'] body {
   gap: 0.65rem;
   min-height: 0;
   padding: 0.3rem 0.7rem;
+  border-left: 0.35rem solid var(--typ-farbe, transparent);
   border-radius: 0.8rem;
   background: var(--b-karte);
 }
@@ -980,6 +1031,18 @@ html[data-route='/board'] body {
   padding: 0;
   list-style: none;
   font-size: 1.15rem;
+}
+
+.legende-typ::before {
+  content: '';
+  width: 0.35rem;
+  height: 1.4rem;
+  border-radius: 0.2rem;
+  background: var(--typ-farbe);
+}
+
+.board .typ-einmalig {
+  --typ-farbe: #ffd54a;
 }
 
 .legende li {

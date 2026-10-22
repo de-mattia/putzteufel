@@ -85,6 +85,7 @@ const hid = kennung();
 const code = kennung();
 const h = `households/${hid}`;
 const WECHSEL = { wochentag: 0, stunde: 20, minute: 0 };
+const BILD = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
 
 const gruender = await geraetAnmelden();
 const fremd = await geraetAnmelden();
@@ -157,6 +158,7 @@ await erwarte('Aufgabe löschen', false, () => schreiben(fernseher, [{ art: 'loe
 await erwarte('Verlaufseintrag mit Zusatzfeld', false, () => schreiben(fernseher, [{ ...eintrag('X'), daten: { aufgabe: 'bad', titel: 'X', erledigtVon: 'sandra', kw: 'x', raum: 'Bad' } }]));
 await erwarte('Sich selbst zur Person machen', false, () => rolle(fernseher, 'person', 'sandra'));
 await erwarte('Mitglied anlegen', false, () => schreiben(fernseher, [{ art: 'anlegen', pfad: `${h}/members/x`, daten: { name: 'X', farbe: '#000000', reihenfolge: 9 } }]));
+await erwarte('Profilbild setzen', false, () => schreiben(fernseher, [{ art: 'aendern', pfad: `${h}/members/sandra`, daten: { bild: BILD } }]));
 await erwarte('Beitrittscode lesen (Join-Knopf am Board)', true, () => lesen(fernseher, `${h}/geheim/beitritt`));
 await erwarte('Beitrittscode ändern', false, () => schreiben(fernseher, [{ art: 'setzen', pfad: `${h}/geheim/beitritt`, daten: { code: kennung() } }]));
 await erwarte('Anderes Gerät entfernen', false, () => schreiben(fernseher, [{ art: 'loeschen', pfad: `${h}/devices/${gruender.uid}` }]));
@@ -166,6 +168,10 @@ await erwarte('Beitreten mit richtigem Code', true, () => beitritt(handy, code))
 await erwarte('„Ich bin Sandra“ wählen', true, () => rolle(handy, 'person', 'sandra'));
 await erwarte('Als Person ein nicht vorhandenes Mitglied wählen', false, () => rolle(handy, 'person', 'niemand'));
 await erwarte('Beitrittscode lesen (für den QR-Code)', true, () => lesen(handy, `${h}/geheim/beitritt`));
+await erwarte('Eigenes Profilbild setzen', true, () => schreiben(handy, [{ art: 'aendern', pfad: `${h}/members/sandra`, daten: { bild: BILD } }]));
+await erwarte('Profilbild einer anderen Person setzen', false, () => schreiben(handy, [{ art: 'aendern', pfad: `${h}/members/christoph`, daten: { bild: BILD } }]));
+await erwarte('Profilbild, das kein JPEG ist', false, () => schreiben(handy, [{ art: 'aendern', pfad: `${h}/members/sandra`, daten: { bild: 'javascript:alert(1)' } }]));
+await erwarte('Eigenen Namen ändern', false, () => schreiben(handy, [{ art: 'aendern', pfad: `${h}/members/sandra`, daten: { name: 'Sandy' } }]));
 await erwarte('Übernehmen', true, () => schreiben(handy, [karte('keller', { status: 'uebernommen', uebernommenVon: 'sandra', statusWoche: '2026-W43' })]));
 const logId = `pruefung-${Date.now()}`;
 await erwarte('Erledigt mit Verlaufseintrag', true, () => schreiben(handy, [

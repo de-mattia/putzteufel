@@ -224,7 +224,7 @@ function spalte(status, liste) {
 function karte(k) {
   return el(
     'article',
-    { class: `karte karte-${k.status}`, 'data-id': k.id },
+    { class: `karte karte-${k.status} typ-${k.typ}`, 'data-id': k.id },
     avatar(mitglied(k.uebernommenVon)),
     el('div', { class: 'karte-titel' }, k.titel),
   );
@@ -238,6 +238,8 @@ function fuss(zustand) {
       'ul',
       { class: 'legende' },
       zustand.mitglieder.map((m) => el('li', {}, avatar(m), el('span', {}, m.name))),
+      el('li', { class: 'legende-typ typ-woche' }, el('span', {}, 'Wochenaufgabe')),
+      el('li', { class: 'legende-typ typ-einmalig' }, el('span', {}, 'Einmalig')),
     ),
     el('p', { class: 'board-hinweis' }, [
       zustand.haushalt ? zustand.haushalt.name : '',
