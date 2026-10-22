@@ -169,7 +169,7 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 | 1 – Gerüst | Statische PWA, Router mit drei Ansichten, Manifest, Service Worker, Icons, Platzhalter-Daten, GitHub Pages | **erledigt** |
 | 2 – Daten & Kopplung | Firebase SDK einbinden, anonyme Anmeldung, Haushalt anlegen, Einladung per Link/QR/Code, „Ich bin …“, Fernseher als Anzeige, Geräteliste, Code erneuern, Firestore-Regeln, ein einziger Haushalt | **erledigt** |
 | 3 – Aufgabenlogik | Aufgaben in Firestore (nur Titel), Übernehmen/Zurückgeben/Erledigt in Echtzeit, Wochenreset per Transaktion, `log`-Einträge, einmalige Aufgaben, **interaktives Board mit Drag & Drop**, Wochenaufgaben in den Einstellungen verwalten, Demo- und Test-Code entfernt, Regeln im Emulator geprüft (49 Prüfungen) | **umgesetzt** (v0.3.0) |
-| 4 – Ansichten | Nur noch, was Christoph ausdrücklich verlangt (Grundsatz: minimal) – z. B. Mitglieder bearbeiten oder Wechselzeit ändern, falls gewünscht | offen |
+| 4 – Ansichten | Nur noch, was Christoph ausdrücklich verlangt (Grundsatz: minimal) – z. B. Mitglieder bearbeiten, falls gewünscht | offen |
 | 5 – Inbetriebnahme | Echte Aufgaben und Mitglieder anlegen, alle Handys und den Fernseher koppeln, Alltagstest | geplant |
 
 ## Später (bewusst nicht jetzt)
