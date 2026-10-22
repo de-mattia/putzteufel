@@ -3,10 +3,15 @@
 
 import {
   holeZustand, abonniere, aktuelleWoche, mitglied, ichBin,
-  uebernehmen, zurueckgeben, erledigen, neueEinmaligeAufgabe,
+  uebernehmen, zurueckgeben, erledigen, aufgabeAnlegen,
 } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, beispielMarke, wechselText } from '../ui.js';
+import { el, fuelle, avatar, wechselText } from '../ui.js';
+
+const fehlgeschlagen = (fehler) => {
+  console.error(fehler);
+  alert('Das hat nicht geklappt. Bitte erneut versuchen.');
+};
 
 export function meineAufgaben(ziel) {
   const wurzel = el('div', { class: 'seite meine' });
@@ -36,20 +41,15 @@ export function meineAufgaben(ziel) {
         el('div', { class: 'kopfleiste-text' }, el('h1', {}, 'Meine Aufgaben'), el('p', {}, `KW ${woche.kw} · Wechsel ${wechselText(woche.ende)}`)),
         ich.id && avatar(ich),
       ),
-      zustand.haushalt && zustand.haushalt.test && el('p', { class: 'hinweis-beispiel' }, el('strong', {}, 'Test-Haushalt '), '(aus der Entwicklung)'),
-      zustand.demoAufgaben && el(
-        'section',
-        { class: 'hinweis-beispiel' },
-        el('p', {}, el('strong', {}, 'Noch Beispielaufgaben (bis Phase 3). '), 'Übernehmen und Erledigt werden noch nicht gespeichert und sind nur auf diesem Gerät sichtbar.'),
-      ),
-      fortschritt(erledigt.length, alle.length),
+      alle.length === 0 && el('p', { class: 'leer' }, 'Noch keine Aufgaben – Wochenaufgaben legst du in den Einstellungen an.'),
+      alle.length > 0 && fortschritt(erledigt.length, alle.length),
       abschnitt('Bei mir', beiMir, (k) => aufgabeKarte(k, [
-        el('button', { class: 'knopf knopf-gruen', type: 'button', onclick: () => erledigen(k.id, ich.id) }, '✓ Erledigt'),
-        el('button', { class: 'knopf knopf-zweit', type: 'button', onclick: () => zurueckgeben(k.id) }, 'Zurückgeben'),
+        el('button', { class: 'knopf knopf-gruen', type: 'button', onclick: () => erledigen(k, ich.id).catch(fehlgeschlagen) }, '✓ Erledigt'),
+        el('button', { class: 'knopf knopf-zweit', type: 'button', onclick: () => zurueckgeben(k).catch(fehlgeschlagen) }, 'Zurückgeben'),
       ]), 'Gerade nichts bei dir – übernimm unten eine Aufgabe.'),
       abschnitt('Noch offen', offen, (k) => aufgabeKarte(k, [
-        el('button', { class: 'knopf knopf-primaer', type: 'button', onclick: () => uebernehmen(k.id, ich.id) }, 'Übernehmen'),
-      ], true), 'Alles verteilt!'),
+        el('button', { class: 'knopf knopf-primaer', type: 'button', onclick: () => uebernehmen(k, ich.id).catch(fehlgeschlagen) }, 'Übernehmen'),
+      ], true), alle.length ? 'Alles verteilt!' : 'Nichts offen.'),
       erledigtListe(erledigt),
     );
   };
@@ -80,17 +80,7 @@ function aufgabeKarte(k, knoepfe, kompakt = false) {
   return el(
     'article',
     { class: `aufgabe${kompakt ? ' aufgabe-kompakt' : ''}` },
-    el(
-      'div',
-      { class: 'aufgabe-text' },
-      el('div', { class: 'aufgabe-titel' }, k.titel),
-      el(
-        'div',
-        { class: 'aufgabe-meta' },
-        k.typ === 'einmalig' ? [el('span', {}, k.raum), el('span', { class: 'typ-marke' }, 'einmalig')] : el('span', {}, `${k.raum} · Wochenaufgabe`),
-        k.id.startsWith('demo-') && beispielMarke(),
-      ),
-    ),
+    el('div', { class: 'aufgabe-text' }, el('div', { class: 'aufgabe-titel' }, k.titel)),
     el('div', { class: 'aufgabe-aktionen' }, knoepfe),
   );
 }
@@ -105,9 +95,7 @@ function erledigtListe(liste) {
 }
 
 function neueAufgabeDialog() {
-  const raeume = [...new Set(holeZustand().aufgaben.map((a) => a.raum))].sort((a, b) => a.localeCompare(b, 'de'));
   const titel = el('input', { name: 'titel', required: true, maxlength: 80, autocomplete: 'off', placeholder: 'z. B. Fenster putzen' });
-  const raum = el('input', { name: 'raum', list: 'raum-vorschlaege', maxlength: 40, autocomplete: 'off', placeholder: 'z. B. Wohnzimmer' });
 
   const dialog = el(
     'dialog',
@@ -123,15 +111,13 @@ function neueAufgabeDialog() {
             titel.focus();
             return;
           }
-          neueEinmaligeAufgabe(titel.value.trim(), raum.value.trim() || 'Allgemein');
+          aufgabeAnlegen(titel.value.trim(), 'einmalig').catch(fehlgeschlagen);
           e.target.reset();
         },
       },
       el('h2', {}, 'Einmalige Aufgabe'),
       el('p', { class: 'dialog-hilfe' }, 'Bleibt stehen, bis sie erledigt ist.'),
       el('label', {}, 'Was ist zu tun?', titel),
-      el('label', {}, 'Raum', raum),
-      el('datalist', { id: 'raum-vorschlaege' }, raeume.map((r) => el('option', { value: r }))),
       el(
         'div',
         { class: 'dialog-knoepfe' },

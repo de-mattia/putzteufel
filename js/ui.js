@@ -52,8 +52,6 @@ export function avatar(mitglied) {
   );
 }
 
-export const beispielMarke = () => el('span', { class: 'beispiel-marke', title: 'Platzhalter für Phase 1' }, 'Beispiel');
-
 const uhrzeitFormat = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
 const wechselFormat = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' });
 const datumFormat = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });

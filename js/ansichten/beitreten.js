@@ -1,7 +1,7 @@
 // #/beitreten?h=<haushalt>&c=<code> – Gerät per Einladung koppeln.
 // Schritt 1 (automatisch): Gerät mit Code anlegen. Schritt 2: „Ich bin …“ oder „Anzeige“.
 
-import { holeZustand, abonniere, beitreten as geraetKoppeln, rolleWaehlen, entkoppeln, leseEinladung } from '../store.js';
+import { holeZustand, abonniere, beitreten as geraetKoppeln, rolleWaehlen, leseEinladung } from '../store.js';
 import { el, fuelle, avatar } from '../ui.js';
 
 export function beitreten(ziel, parameter) {
@@ -80,24 +80,11 @@ export function beitreten(ziel, parameter) {
 
     // Schon gekoppelt
     if (z.phase === 'bereit') {
-      const gleicherHaushalt = einladung && einladung.hid === z.haushaltId;
       fuelle(wurzel, kopf, el(
         'section',
         { class: 'einstellung' },
         el('h2', {}, 'Dieses Gerät ist schon gekoppelt'),
-        el('p', { class: 'einstellung-text' }, `Haushalt: ${z.haushalt ? z.haushalt.name : '…'}`),
-        el('div', { class: 'knopf-reihe' },
-          el('a', { class: 'knopf knopf-primaer', href: '#/' }, 'Zu meinen Aufgaben'),
-          einladung && !gleicherHaushalt && el('button', {
-            class: 'knopf knopf-zweit',
-            type: 'button',
-            disabled: arbeitet,
-            onclick: async () => {
-              if (!confirm('Dieses Gerät aus dem bisherigen Haushalt entfernen und dem neuen beitreten?')) return;
-              await entkoppeln();
-              koppeln();
-            },
-          }, 'Haushalt wechseln')),
+        el('a', { class: 'knopf knopf-primaer', href: '#/' }, 'Zu meinen Aufgaben'),
       ));
       return;
     }

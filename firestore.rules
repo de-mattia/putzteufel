@@ -4,10 +4,12 @@ rules_version = '2';
 //
 // Grundsatz: Zugriff nur für Geräte, die an den Haushalt gekoppelt sind, d. h.
 // households/{hid}/devices/{uid} existiert für die anonyme Anmeldung des Geräts.
-// Rollen eines Geräts: 'person' (darf schreiben), 'anzeige' (nur lesen, z. B. der
-// Fernseher) und 'neu' (gerade beigetreten, wählt noch „Ich bin …“; nur lesen).
+// Rollen eines Geräts: 'person' (darf schreiben), 'anzeige' (Fernseher: darf Karten auf
+// dem Board verschieben und Verlaufseinträge anlegen, sonst nur lesen) und 'neu' (gerade
+// beigetreten, wählt noch „Ich bin …“; nur lesen).
 //
-// Einspielen: npx firebase-tools deploy --only firestore:rules
+// Einspielen: npx firebase-tools@15.34.0 deploy --only firestore:rules
+// Prüfen (Emulator): siehe tools/regeln-pruefen.mjs
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -28,8 +30,8 @@ service cloud.firestore {
       return /databases/$(database)/documents/households/$(hid)/members/$(mid);
     }
 
-    // Es gibt nur einen echten Haushalt: Er legt beim Gründen dieses Dokument mit an,
-    // danach ist jede weitere Neuanlage gesperrt (auch von Test-Haushalten).
+    // Es gibt nur einen Haushalt: Er legt beim Gründen dieses Dokument mit an,
+    // danach ist jede weitere Neuanlage gesperrt.
     function einrichtungPfad() {
       return /databases/$(database)/documents/einrichtung/abgeschlossen;
     }
@@ -38,8 +40,16 @@ service cloud.firestore {
       return angemeldet() && exists(eigenesGeraetPfad(hid));
     }
 
+    function rolle(hid) {
+      return get(eigenesGeraetPfad(hid)).data.rolle;
+    }
+
     function istPerson(hid) {
-      return gekoppelt(hid) && get(eigenesGeraetPfad(hid)).data.rolle == 'person';
+      return gekoppelt(hid) && rolle(hid) == 'person';
+    }
+
+    function istAnzeige(hid) {
+      return gekoppelt(hid) && rolle(hid) == 'anzeige';
     }
 
     // Gerät hat den Haushalt angelegt (nach dem Batch ist es als Gründer eingetragen).
@@ -81,6 +91,16 @@ service cloud.firestore {
         && w.minute is int && w.minute >= 0 && w.minute <= 59;
     }
 
+    // Karte: offen ohne Person, sonst mit Person
+    function gueltigeAufgabe() {
+      return nurFelder(['titel', 'typ', 'status', 'uebernommenVon', 'statusWoche', 'erstelltAm'])
+        && gueltigerName(neu().titel, 80)
+        && neu().typ in ['woche', 'einmalig']
+        && ((neu().status == 'offen' && neu().uebernommenVon == null)
+          || (neu().status in ['uebernommen', 'erledigt'] && neu().uebernommenVon is string))
+        && (neu().statusWoche == null || neu().statusWoche is string);
+    }
+
     function gueltigesMitglied() {
       return nurFelder(['name', 'farbe', 'reihenfolge', 'einstellungen', 'bild'])
         && gueltigerName(neu().name, 30)
@@ -92,8 +112,7 @@ service cloud.firestore {
       allow create: if dok == 'abgeschlossen'
         && nurFelder(['haushalt', 'erstelltAm'])
         && neu().erstelltAm == request.time
-        && gruendet(neu().haushalt)
-        && getAfter(haushaltPfad(neu().haushalt)).data.get('test', false) == false;
+        && gruendet(neu().haushalt);
       allow update, delete: if false;
     }
 
@@ -102,18 +121,16 @@ service cloud.firestore {
       allow list: if false;
 
       // Das erste Gerät legt den Haushalt an und koppelt sich im selben Batch als Person.
-      // Der echte Haushalt sperrt dabei jede weitere Neuanlage (einrichtung/abgeschlossen);
-      // Test-Haushalte aus der Entwicklung waren nur vorher möglich.
+      // Dabei entsteht einrichtung/abgeschlossen, das jede weitere Neuanlage sperrt.
       allow create: if angemeldet()
         && !exists(einrichtungPfad())
-        && (neu().get('test', false) == true || existsAfter(einrichtungPfad()))
+        && existsAfter(einrichtungPfad())
         && gueltigeKennung(hid)
-        && nurFelder(['name', 'wochenwechsel', 'erstelltAm', 'erstelltVon', 'test'])
+        && nurFelder(['name', 'wochenwechsel', 'erstelltAm', 'erstelltVon'])
         && neu().erstelltVon == request.auth.uid
         && neu().erstelltAm == request.time
         && gueltigerName(neu().name, 60)
         && gueltigerWechsel(neu().wochenwechsel)
-        && (!('test' in neu()) || neu().test is bool)
         && getAfter(eigenesGeraetPfad(hid)).data.rolle == 'person';
       allow update: if istPerson(hid)
         && geaendert().hasOnly(['name', 'wochenwechsel'])
@@ -176,15 +193,28 @@ service cloud.firestore {
         allow delete: if angemeldet() && (uid == request.auth.uid || istPerson(hid));
       }
 
+      // Aufgaben: Personen verwalten sie (anlegen, umbenennen, löschen); die Anzeige darf
+      // nur Status und Person ändern (Karten auf dem Board verschieben).
       match /tasks/{tid} {
         allow read: if gekoppelt(hid);
-        allow create, update, delete: if istPerson(hid);
+        allow create: if istPerson(hid) && gueltigeAufgabe() && neu().erstelltAm == request.time;
+        allow update: if gueltigeAufgabe() && neu().erstelltAm == resource.data.erstelltAm && (
+          istPerson(hid)
+          || (istAnzeige(hid) && geaendert().hasOnly(['status', 'uebernommenVon', 'statusWoche']))
+        );
+        allow delete: if istPerson(hid);
       }
 
       // Verlauf: nur anhängen, nie ändern oder löschen.
       match /log/{eid} {
         allow read: if gekoppelt(hid);
-        allow create: if istPerson(hid);
+        allow create: if (istPerson(hid) || istAnzeige(hid))
+          && nurFelder(['aufgabe', 'titel', 'erledigtVon', 'zeitpunkt', 'kw'])
+          && neu().aufgabe is string
+          && gueltigerName(neu().titel, 80)
+          && neu().erledigtVon is string
+          && neu().zeitpunkt == request.time
+          && neu().kw is string;
         allow update, delete: if false;
       }
     }

@@ -4,6 +4,10 @@ Familien-Putzplan als Kanban-Board. Diese Datei ist der **technische Plan** (Arc
 offene Punkte) und wird mit jeder Phase fortgeschrieben. **Alle Vorgaben von Christoph und alle
 Designentscheidungen mit Begründung** stehen in [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md).
 
+> **Grundsatz (seit 2026-10-22): Die Features bleiben minimal.** Gebaut wird nur, was ausdrücklich verlangt ist –
+> „Neue Ideen kommen dann sicher später von alleine.“ Was beim Arbeiten überflüssig wirkt, wird als Vorschlag
+> genannt, nicht eigenmächtig entfernt.
+
 ## Ziel und Rahmen
 
 - Putzplan für die Familie als Kanban-Board mit den Spalten **Offen / Übernommen / Erledigt**.
@@ -11,7 +15,8 @@ Designentscheidungen mit Begründung** stehen in [ENTSCHEIDUNGEN.md](ENTSCHEIDUN
 - **Kostenlos** betrieben (GitHub Pages + Firebase Spark-Tarif).
 - **Nutzer:** Christoph (Auftraggeber, GitHub-Konto `de-mattia`), Sandra, Moira, Paula, Laura –
   alle mit Android-Handys, Installation über Chrome („Zum Startbildschirm hinzufügen“ / „App installieren“).
-- **Fernseher:** Fire-TV-Stick mit Silk-Browser, 1920×1080, **nur Anzeige**, keine Bedienung.
+- **Fernseher:** Fire-TV-Stick mit Silk-Browser, 1920×1080, gekoppelt als „Anzeige“. Karten lassen sich dort
+  per Drag & Drop verschieben (Silk-Cursor der Fernbedienung); sonst keine Bedienung.
 
 ## Architektur
 
@@ -27,7 +32,8 @@ Designentscheidungen mit Begründung** stehen in [ENTSCHEIDUNGEN.md](ENTSCHEIDUN
 | Firebase SDK | Per CDN (`https://www.gstatic.com/firebasejs/12.19.0/…`) mit **fest gepinnter Version** `12.19.0`, eingetragen in `js/config.js`. Der Service Worker speichert die SDK-Dateien („Cache zuerst“), damit die App auch offline startet |
 | Nicht genutzt | **Keine Cloud Functions, kein Firebase Storage** – beides gibt es nur im kostenpflichtigen Blaze-Tarif |
 | Konfiguration | `js/config.js` (`firebaseConfig`, `FIREBASE_SDK_VERSION`). Die Web-Konfiguration ist kein Geheimnis und darf ins öffentliche Repo; geschützt wird über die Firestore-Regeln |
-| Regeln | `firestore.rules` (mit `firebase.json`, `.firebaserc`), einspielen: `npx firebase-tools@15.34.0 deploy --only firestore:rules`, prüfen: `node tools/regeln-pruefen.mjs` |
+| Regeln | `firestore.rules` (mit `firebase.json`, `.firebaserc`), einspielen: `npx firebase-tools@15.34.0 deploy --only firestore:rules` |
+| Testen | Nur im **Firebase-Emulator** (braucht Java 21): Regeln mit `npx firebase-tools@15.34.0 emulators:exec --only auth,firestore "node tools/regeln-pruefen.mjs"`; die App unter `localhost`/`127.0.0.1` spricht automatisch mit dem Emulator (`npx firebase-tools@15.34.0 emulators:start --only auth,firestore`). Die echte Datenbank bleibt dabei unberührt |
 
 ### Firebase-Projekt (Phase 0, eingerichtet von Christoph)
 
@@ -49,11 +55,10 @@ css/app.css             Alle Stile (Handy hell/dunkel nach System, Board immer d
 js/app.js               Start: Router mit Zugangsregeln je Gerät, Service-Worker-Registrierung
 js/router.js            Hash-Router (#/pfad?param=wert)
 js/config.js            App-Version, Firebase-Konfiguration und SDK-Version
-js/firebase.js          Lädt das SDK, anonyme Anmeldung, Firestore mit Offline-Cache
-js/store.js             Datenzugriff: Haushalt, Mitglieder, Geräte live aus Firestore; Aufgaben bis Phase 3 Beispiele
+js/firebase.js          Lädt das SDK, anonyme Anmeldung, Firestore mit Offline-Cache (lokal: Emulator)
+js/store.js             Datenzugriff: Haushalt, Mitglieder, Geräte, Aufgaben, Verlauf live aus Firestore
 js/woche.js             Putzwoche, Kalenderwoche, effektiver Status
 js/ui.js                DOM-Helfer (el, fuelle), Avatar, Formatierung
-js/demo-daten.js        PLATZHALTER-Beispielaufgaben (bis Phase 3)
 js/vendor/uqr.js        QR-Code-Erzeugung (uqr 0.1.3, MIT, unveränderte Kopie)
 js/ansichten/*.js       Ansichten: meine, board, einstellungen, start, beitreten, status
 icons/                  App-Icons, erzeugt aus putzteufel-original.png mit tools/make_icons.py
@@ -79,8 +84,9 @@ CLAUDE.md               Arbeitsregeln für Claude-Sitzungen
      mit `households/{id}/geheim/beitritt` – für das Gerät selbst ist dieses Dokument nicht lesbar.
   2. „**Ich bin …**“ (`rolle: 'person'`, `mitglied`) oder „**Anzeige**“ (`rolle: 'anzeige'`). Dabei wird der Code aus
      dem Gerätedokument entfernt. Aus „anzeige“ kann ein Gerät nicht selbst „person“ werden.
-- **Rollen:** `person` liest und schreibt, `anzeige` (Fernseher) und `neu` lesen nur. Personen-Geräte dürfen den
-  Beitrittscode lesen (für den QR-Code), Anzeigen nicht.
+- **Rollen:** `person` liest und schreibt alles; `anzeige` (Fernseher) liest und darf Karten verschieben (nur
+  `status`, `uebernommenVon`, `statusWoche`) sowie Verlaufseinträge anlegen; `neu` liest nur. Personen-Geräte
+  dürfen den Beitrittscode lesen (für den QR-Code), Anzeigen nicht.
 - **Geräte:** Liste in den Einstellungen; Personen-Geräte können jedes Gerät entfernen, jedes Gerät kann sich
   selbst entkoppeln. Ein entferntes Gerät verliert sofort den Zugriff und zeigt wieder die Startseite.
 - **Zugang je Gerät** (`js/app.js`): nicht gekoppelt → Startseite (nur „Ich wurde eingeladen“) bzw. Beitritt;
@@ -92,9 +98,8 @@ CLAUDE.md               Arbeitsregeln für Claude-Sitzungen
 einrichtung/abgeschlossen                           nicht lesbar; sperrt weitere Haushalte
   haushalt (haushaltId), erstelltAm
 
-households/{haushaltId}                             ID: 6 Zeichen, z. B. "c489xw"
-  name, wochenwechsel { wochentag (0 = So … 6 = Sa), stunde, minute }, erstelltAm, erstelltVon (uid),
-  test (nur bei Test-Haushalten aus der Entwicklung: true)
+households/{haushaltId}                             der einzige Haushalt, ID: 6 Zeichen
+  name, wochenwechsel { wochentag (0 = So … 6 = Sa), stunde, minute }, erstelltAm, erstelltVon (uid)
 
 households/{haushaltId}/members/{mitgliedId}        Person, ID z. B. "christoph"
   name, farbe ("#rrggbb"), reihenfolge, einstellungen { … }, bild (optional, Base64 ~128×128)
@@ -103,10 +108,10 @@ households/{haushaltId}/devices/{uid}               Gerät
   rolle ("person" | "anzeige" | "neu"), mitglied (mitgliedId | null), name (z. B. "Android-Gerät"),
   gekoppeltAm, code (nur während des Beitritts)
 
-households/{haushaltId}/tasks/{aufgabeId}           Aufgabe = Karte
-  titel, raum, typ ("woche" | "einmalig"), aktiv (bool),
-  status ("offen" | "uebernommen" | "erledigt"), uebernommenVon (mitgliedId | null),
-  statusWoche ("2026-W43" – Putzwoche, in der der Status gesetzt wurde)
+households/{haushaltId}/tasks/{aufgabeId}           Aufgabe = Karte (nur Titel und Person, keine Tags)
+  titel, typ ("woche" | "einmalig"), status ("offen" | "uebernommen" | "erledigt"),
+  uebernommenVon (mitgliedId; null genau dann, wenn "offen"),
+  statusWoche ("2026-W43" – Putzwoche, in der der Status gesetzt wurde, oder null), erstelltAm
 
 households/{haushaltId}/log/{eintragId}             Verlauf – nur anhängen
   aufgabe (aufgabeId), titel, erledigtVon (mitgliedId), zeitpunkt, kw ("2026-W43")
@@ -115,7 +120,9 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
   code (6 Zeichen)
 ```
 
-- Der `log` ist die Grundlage für die spätere Statistik. Regeln: nur `create`, kein `update`/`delete`.
+- Der `log` ist die Grundlage für die spätere Statistik. Regeln: nur `create` (Person oder Anzeige), kein
+  `update`/`delete`.
+- Sortierung der Karten: nach Titel.
 - Profilbild (Ausbaustufe „Mein Profil“): beim Hochladen im Browser auf ca. **128×128** verkleinern und als
   kleines **Base64** direkt im Member-Dokument speichern (kein Firebase Storage nötig).
 
@@ -129,9 +136,11 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
   - Wochenaufgabe mit `statusWoche` ≠ aktuelle Putzwoche → gilt als „Offen“ ohne Person.
   - So springt der Fernseher **pünktlich** um, ohne neu zu laden und ohne dass jemand schreibt.
     Das Board rechnet dafür alle 30 Sekunden neu.
-- **Physisches Zurücksetzen:** Das nächste **Handy**, das die App lädt, setzt veraltete Karten per
-  **Transaktion** in Firestore auf „Offen“ (der Fernseher schreibt nicht).
-- Jeder Klick auf **„Erledigt“** schreibt zusätzlich einen **`log`-Eintrag**.
+- **Physisches Zurücksetzen:** Das nächste Gerät, das die App lädt (Person oder Anzeige), setzt veraltete
+  Wochenkarten je Karte per **Transaktion** auf „Offen“ (`uebernommenVon` und `statusWoche` → null). Erledigte
+  einmalige Aufgaben aus Vorwochen löscht das nächste Personen-Gerät (der Verlauf behält sie).
+- Jeder Wechsel nach **„Erledigt“** (Knopf am Handy oder Ziehen am Board) schreibt im selben Batch einen
+  **`log`-Eintrag**.
 - **Einmalige Aufgaben** bleiben, bis sie erledigt sind (auch über den Wochenwechsel, auch wenn sie
   übernommen sind). **Erledigte** einmalige Aufgaben verschwinden beim nächsten Wochenwechsel aus „Erledigt“.
 - **Putzwoche → Kalenderwoche:** Eine Putzwoche (z. B. So 20:00 bis So 20:00) bekommt die ISO-KW, in der ihre
@@ -141,9 +150,9 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 
 | Route | Für | Inhalt |
 | --- | --- | --- |
-| `#/board` | Fernseher, Browser | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte mit **Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt „11 von 18 erledigt“** und Uhr. Unten Legende der Personen. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Hält den Bildschirm per Wake-Lock wach, wo unterstützt |
-| `#/` | Handy | **„Meine Aufgaben“**: oben **„Bei mir“** mit **✓ Erledigt / Zurückgeben**, darunter **„Noch offen“** mit **Übernehmen**, eingeklappt „Erledigt diese Woche“. **Plus-Knopf** für eine einmalige Aufgabe |
-| `#/einstellungen` | Handy | **Einladen** (QR-Code, Link, Einladungscode, Code erneuern), **Mitglieder** (live), „Dieses Gerät gehört“, **Geräte** (entfernen/entkoppeln), **Zeitpunkt des Wochenwechsels**, Wochenaufgaben (noch Beispiele), App-Infos |
+| `#/board` | Fernseher, Browser | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Uhr; unten Legende der Personen. **Drag & Drop** (Pointer Events; Maus sofort, Touch nach 250 ms Halten): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (Fernseher) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Wake-Lock, wo unterstützt |
+| `#/` | Handy | **„Meine Aufgaben“**: oben **„Bei mir“** mit **✓ Erledigt / Zurückgeben**, darunter **„Noch offen“** mit **Übernehmen**, eingeklappt „Erledigt diese Woche“. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
+| `#/einstellungen` | Handy | **Wochenaufgaben** (anlegen, umbenennen, löschen), **Einladen** (QR-Code, Link, Einladungscode, Code erneuern), **Mitglieder** (live), „Dieses Gerät gehört“, **Geräte** (entfernen/entkoppeln), **Zeitpunkt des Wochenwechsels** (nur Anzeige), App-Infos |
 | `#/start` | neue Geräte | „Ich wurde eingeladen“ mit Feld für den Einladungscode; mit `?einrichten=1` einmalig „Haushalt einrichten“ |
 | `#/beitreten` | neue Geräte | Koppelt per Einladung und fragt „Wer bist du?“ bzw. „Anzeige“ |
 
@@ -156,9 +165,9 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 | --- | --- | --- |
 | 0 – Einrichtung | Firebase-Projekt anlegen (durch Christoph), Web-App registrieren, Firestore und anonyme Anmeldung einschalten | **erledigt** (`putzteufel-b6e23`) |
 | 1 – Gerüst | Statische PWA, Router mit drei Ansichten, Manifest, Service Worker, Icons, Platzhalter-Daten, GitHub Pages | **erledigt** |
-| 2 – Daten & Kopplung | Firebase SDK einbinden, anonyme Anmeldung, Haushalt anlegen, Einladung per Link/QR/Code, „Ich bin …“, Fernseher als Anzeige, Geräteliste, Code erneuern, Firestore-Regeln (eingespielt, 41 Prüfungen bestanden), ein einziger Haushalt | **umgesetzt** – abgeschlossen, sobald Christoph den Haushalt angelegt und die Geräte gekoppelt hat |
-| 3 – Aufgabenlogik | Übernehmen/Zurückgeben/Erledigt in Firestore, Wochenreset per Transaktion, `log`-Einträge, einmalige Aufgaben | geplant |
-| 4 – Ansichten | Board, „Meine Aufgaben“ und Einstellungen fertig ausbauen (Aufgaben und Mitglieder verwalten, Wechselzeit, Geräte) | geplant |
+| 2 – Daten & Kopplung | Firebase SDK einbinden, anonyme Anmeldung, Haushalt anlegen, Einladung per Link/QR/Code, „Ich bin …“, Fernseher als Anzeige, Geräteliste, Code erneuern, Firestore-Regeln, ein einziger Haushalt | **erledigt** |
+| 3 – Aufgabenlogik | Aufgaben in Firestore (nur Titel), Übernehmen/Zurückgeben/Erledigt in Echtzeit, Wochenreset per Transaktion, `log`-Einträge, einmalige Aufgaben, **interaktives Board mit Drag & Drop**, Wochenaufgaben in den Einstellungen verwalten, Demo- und Test-Code entfernt, Regeln im Emulator geprüft (49 Prüfungen) | **umgesetzt** (v0.3.0) |
+| 4 – Ansichten | Nur noch, was Christoph ausdrücklich verlangt (Grundsatz: minimal) – z. B. Mitglieder bearbeiten oder Wechselzeit ändern, falls gewünscht | offen |
 | 5 – Inbetriebnahme | Echte Aufgaben und Mitglieder anlegen, alle Handys und den Fernseher koppeln, Alltagstest | geplant |
 
 ## Später (bewusst nicht jetzt)
@@ -176,16 +185,12 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
   Browser-Schlüssel des Projekts auf die Websites `https://de-mattia.github.io/*` und `http://localhost:8137/*`
   beschränken. Die Daten schützen weiterhin die Firestore-Regeln; das erschwert nur fremde Nutzung des Schlüssels.
 
-- **Testdaten aus der Entwicklung:** Die Test-Haushalte (`avwg98`, `uh6erm`, `c489xw`) sind gelöscht. Übrig sind
-  nur anonyme Test-Konten unter Authentication → Nutzer (harmlos, können bleiben oder gelöscht werden). Löschen
-  eines Haushalts samt Unterdaten: `npx firebase-tools@15.34.0 firestore:delete households/<ID> --recursive --project putzteufel-b6e23`.
-- **Regeltests nach der Einrichtung:** `tools/regeln-pruefen.mjs` legt einen Test-Haushalt an – das geht nach der
-  Einrichtung nicht mehr. Für spätere Regeländerungen (Phase 3) das Skript auf vorübergehend gekoppelte
-  Test-Geräte im echten Haushalt umstellen (ohne `log`-Einträge, da diese nicht löschbar sind).
+- **Testdaten:** Getestet wird nur noch im Emulator. In der echten Datenbank liegen keine Testdaten mehr; übrig
+  sind nur anonyme Test-Konten aus Phase 2 unter Authentication → Nutzer (harmlos).
+- **Fire TV:** Ob sich Karten mit dem Silk-Cursor der Fernbedienung ziehen lassen, muss Christoph am Gerät testen.
 - **Gelöschter Browserspeicher:** Löscht jemand die Website-Daten, ist die anonyme Anmeldung weg – das Gerät
   muss neu eingeladen werden; das alte Gerät in der Liste entfernen.
 - **Bildschirmschoner am Fire TV:** Die Wake-Lock-API verhindert ihn vermutlich nicht. Ggf. in den
   Fire-TV-Einstellungen (Anzeige & Töne → Bildschirmschoner) abschalten.
 - **Volle Spalte „Erledigt“ zum Wochenende:** Sind fast alle Karten erledigt, wird die Spalte zweispaltig und
   die anderen beiden sind leer. In Phase 4 prüfen, ob die Spaltenbreite sich nach der Kartenzahl richten soll.
-- **Silk-Browser:** Darstellung und Vollbild am echten Gerät prüfen (Ende Phase 1 durch Christoph).

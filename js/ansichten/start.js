@@ -1,14 +1,12 @@
 // #/start – für noch nicht gekoppelte Geräte: Einladung annehmen.
 // Es gibt nur einen Haushalt. Ihn legt Christoph einmalig über #/start?einrichten=1 an;
 // danach sperren die Firestore-Regeln jede weitere Neuanlage.
-// #/start?test=1 legte vor der Einrichtung Test-Haushalte für die Entwicklung an.
 
 import { holeZustand, haushaltAnlegen, leseEinladung, STANDARD_MITGLIEDER } from '../store.js';
 import { el, avatar } from '../ui.js';
 
 export function start(ziel, parameter) {
-  const test = parameter.get('test') === '1';
-  const einrichten = test || parameter.get('einrichten') === '1';
+  const einrichten = parameter.get('einrichten') === '1';
   const { meldung } = holeZustand();
   let ichBin = STANDARD_MITGLIEDER[0].id;
 
@@ -34,7 +32,7 @@ export function start(ziel, parameter) {
   );
 
   // Neuer Haushalt
-  const nameFeld = el('input', { name: 'name', required: true, maxlength: 60, value: test ? 'TEST – Entwicklung' : 'Unser Haushalt' });
+  const nameFeld = el('input', { name: 'name', required: true, maxlength: 60, value: 'Unser Haushalt' });
   const personen = el('div', { class: 'personen-wahl', role: 'radiogroup', 'aria-label': 'Ich bin' });
   const zeichnePersonen = () => {
     personen.textContent = '';
@@ -61,7 +59,7 @@ export function start(ziel, parameter) {
         anlegenKnopf.textContent = 'Wird angelegt …';
         anlegenFehler.hidden = true;
         try {
-          await haushaltAnlegen({ name: nameFeld.value.trim(), ichBin, test });
+          await haushaltAnlegen({ name: nameFeld.value.trim(), ichBin });
           location.hash = '#/';
         } catch (fehler) {
           console.error(fehler);
@@ -93,7 +91,6 @@ export function start(ziel, parameter) {
       el('p', {}, 'Der Putzplan für die ganze Familie'),
     ),
     meldung && el('p', { class: 'meldung' }, meldung),
-    test && el('p', { class: 'hinweis-beispiel' }, el('strong', {}, 'Testmodus: '), 'Der Haushalt wird als Test markiert.'),
     el(
       'section',
       { class: 'einstellung' },
@@ -106,9 +103,7 @@ export function start(ziel, parameter) {
       'section',
       { class: 'einstellung' },
       el('h2', {}, 'Haushalt einrichten'),
-      el('p', { class: 'einstellung-text' }, test
-        ? 'Test-Haushalt für die Entwicklung.'
-        : 'Nur einmal, auf dem ersten Handy. Danach kann kein weiterer Haushalt angelegt werden – alle anderen Geräte treten per Einladung bei.'),
+      el('p', { class: 'einstellung-text' }, 'Nur einmal, auf dem ersten Handy. Danach kann kein weiterer Haushalt angelegt werden – alle anderen Geräte treten per Einladung bei.'),
       anlegenForm,
     ),
   ));

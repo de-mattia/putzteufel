@@ -49,7 +49,6 @@ export function putzwoche(jetzt = new Date(), wechsel = STANDARD_WECHSEL) {
 // Effektiver Zustand einer Karte in der angegebenen Putzwoche.
 // Liefert null, wenn die Karte nicht (mehr) angezeigt wird.
 export function effektiv(aufgabe, wochenSchluessel) {
-  if (!aufgabe.aktiv) return null;
   if (aufgabe.typ === 'woche' && aufgabe.statusWoche !== wochenSchluessel) {
     return { status: 'offen', uebernommenVon: null };
   }
@@ -59,11 +58,11 @@ export function effektiv(aufgabe, wochenSchluessel) {
   return { status: aufgabe.status, uebernommenVon: aufgabe.uebernommenVon };
 }
 
-// Alle sichtbaren Karten der Woche, sortiert nach Raum und Titel.
+// Alle sichtbaren Karten der Woche, sortiert nach Titel.
 export function karten(aufgaben, wochenSchluessel) {
   return aufgaben
     .map((aufgabe) => ({ aufgabe, zustand: effektiv(aufgabe, wochenSchluessel) }))
     .filter((k) => k.zustand)
     .map(({ aufgabe, zustand }) => ({ ...aufgabe, ...zustand }))
-    .sort((a, b) => a.raum.localeCompare(b.raum, 'de') || a.titel.localeCompare(b.titel, 'de'));
+    .sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
 }

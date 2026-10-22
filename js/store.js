@@ -1,12 +1,10 @@
-// Datenhaltung der App. Haushalt, Mitglieder, Geräte und Beitrittscode kommen live
-// aus Firestore (Phase 2). Die Aufgaben sind bis Phase 3 noch Beispiele im Speicher.
-// Die Ansichten nutzen nur die exportierten Funktionen.
+// Datenhaltung der App: Haushalt, Mitglieder, Geräte, Beitrittscode und Aufgaben kommen
+// live aus Firestore. Die Ansichten nutzen nur die exportierten Funktionen.
 
 import { firebase } from './firebase.js';
-import { demoAufgaben } from './demo-daten.js';
 import { putzwoche, STANDARD_WECHSEL } from './woche.js';
 
-// Vorlage für einen neuen Haushalt (IDs bleiben, auch wenn Namen später geändert werden).
+// Vorlage für den Haushalt (IDs bleiben, auch wenn Namen später geändert werden).
 export const STANDARD_MITGLIEDER = [
   { id: 'christoph', name: 'Christoph', farbe: '#3b82f6' },
   { id: 'sandra', name: 'Sandra', farbe: '#a855f7' },
@@ -22,6 +20,8 @@ const KENNUNG_LAENGE = 6;
 const zuhoerer = new Set();
 let fb = null;
 let beobachter = [];
+let aufgabenGeladen = false; // erster Stand der Aufgaben vom Server da?
+let aufgeraeumtFuer = null; // Putzwoche, für die der Wochenwechsel schon geschrieben wurde
 
 const zustand = {
   phase: 'laedt', // laedt | fehler | ungekoppelt | bereit
@@ -33,9 +33,8 @@ const zustand = {
   mitglieder: [],
   geraete: [],
   code: null, // Beitrittscode – nur für Personen-Geräte lesbar
+  aufgaben: [],
   offline: false,
-  demoAufgaben: true,
-  aufgaben: demoAufgaben(putzwoche(new Date(), STANDARD_WECHSEL).schluessel),
 };
 
 export const holeZustand = () => zustand;
@@ -78,7 +77,9 @@ function beobachte(hid) {
   stoppeBeobachtung();
   const { db, fs } = fb;
   const haushalt = fs.doc(db, 'households', hid);
-  Object.assign(zustand, { haushaltId: hid, haushalt: null, geraet: null, mitglieder: [], geraete: [], code: null });
+  Object.assign(zustand, { haushaltId: hid, haushalt: null, geraet: null, mitglieder: [], geraete: [], code: null, aufgaben: [] });
+  aufgabenGeladen = false;
+  aufgeraeumtFuer = null;
 
   const beiFehler = (fehler) => {
     if (fehler.code === 'permission-denied') entkoppelt('Dieses Gerät gehört nicht (mehr) zu diesem Haushalt.');
@@ -94,6 +95,7 @@ function beobachte(hid) {
     const warPerson = Boolean(zustand.geraet && zustand.geraet.rolle === 'person');
     setze({ phase: 'bereit', meldung: null, geraet: { id: snap.id, ...snap.data() } });
     if (zustand.geraet.rolle === 'person' && !warPerson) beobachteCode(haushalt);
+    wochenwechselSchreiben();
   }, beiFehler));
 
   beobachter.push(fs.onSnapshot(haushalt, { includeMetadataChanges: true }, (snap) => {
@@ -106,6 +108,13 @@ function beobachte(hid) {
 
   beobachter.push(fs.onSnapshot(fs.collection(haushalt, 'devices'), (snap) => {
     setze({ geraete: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+  }, beiFehler));
+
+  // Mit Metadaten, damit auch die Bestätigung „vom Server“ ankommt, wenn der Cache schon stimmte.
+  beobachter.push(fs.onSnapshot(fs.collection(haushalt, 'tasks'), { includeMetadataChanges: true }, (snap) => {
+    setze({ aufgaben: snap.docs.map((d) => ({ id: d.id, ...d.data() })) });
+    if (!snap.metadata.fromCache) aufgabenGeladen = true;
+    wochenwechselSchreiben();
   }, beiFehler));
 }
 
@@ -126,23 +135,20 @@ function entkoppelt(meldung) {
   vergissHaushalt();
   setze({
     phase: 'ungekoppelt', meldung, haushaltId: null, haushalt: null, geraet: null,
-    mitglieder: [], geraete: [], code: null,
+    mitglieder: [], geraete: [], code: null, aufgaben: [],
   });
 }
 
-// ---------- Haushalt anlegen, beitreten, Geräte ----------
+// ---------- Haushalt einrichten, beitreten, Geräte ----------
 
-export async function haushaltAnlegen({ name, ichBin: mitgliedId, test = false }) {
+// Legt den einzigen Haushalt an. Die Firestore-Regeln lassen das nur einmal zu.
+export async function haushaltAnlegen({ name, ichBin: mitgliedId }) {
   const { db, fs, uid } = fb;
   const hid = zufallsKennung();
   const haushalt = fs.doc(db, 'households', hid);
   const batch = fs.writeBatch(db);
   batch.set(haushalt, {
-    name,
-    wochenwechsel: { ...STANDARD_WECHSEL },
-    erstelltAm: fs.serverTimestamp(),
-    erstelltVon: uid,
-    ...(test ? { test: true } : {}),
+    name, wochenwechsel: { ...STANDARD_WECHSEL }, erstelltAm: fs.serverTimestamp(), erstelltVon: uid,
   });
   batch.set(fs.doc(haushalt, 'geheim', 'beitritt'), { code: zufallsKennung() });
   STANDARD_MITGLIEDER.forEach((m, i) => {
@@ -151,8 +157,7 @@ export async function haushaltAnlegen({ name, ichBin: mitgliedId, test = false }
   batch.set(fs.doc(haushalt, 'devices', uid), {
     rolle: 'person', mitglied: mitgliedId, name: geraeteName(), gekoppeltAm: fs.serverTimestamp(),
   });
-  // Es gibt nur einen Haushalt: Der echte sperrt jede weitere Neuanlage (siehe firestore.rules).
-  if (!test) batch.set(fs.doc(db, 'einrichtung', 'abgeschlossen'), { haushalt: hid, erstelltAm: fs.serverTimestamp() });
+  batch.set(fs.doc(db, 'einrichtung', 'abgeschlossen'), { haushalt: hid, erstelltAm: fs.serverTimestamp() });
   await batch.commit();
   merkeHaushalt(hid);
   beobachte(hid);
@@ -161,7 +166,6 @@ export async function haushaltAnlegen({ name, ichBin: mitgliedId, test = false }
 // Schritt 1 des Beitritts: Gerät mit Code anlegen (Rolle „neu“). Danach „Ich bin …“ wählen.
 export async function beitreten(hid, code) {
   const { db, fs, uid } = fb;
-  if (zustand.haushaltId && zustand.haushaltId !== hid) await entkoppeln();
   const geraet = fs.doc(db, 'households', hid, 'devices', uid);
 
   // Schon gekoppelt (z. B. nach gelöschtem Browserspeicher)? Dann nur wieder verbinden.
@@ -243,6 +247,66 @@ function pruefe(h, c) {
   return gueltig(hid) && gueltig(code) ? { hid, code } : null;
 }
 
+// ---------- Aufgaben ----------
+
+const aufgabenRef = () => fb.fs.collection(fb.db, 'households', zustand.haushaltId, 'tasks');
+const aufgabeRef = (id) => fb.fs.doc(aufgabenRef(), id);
+
+export function aufgabeAnlegen(titel, typ) {
+  return fb.fs.addDoc(aufgabenRef(), {
+    titel, typ, status: 'offen', uebernommenVon: null, statusWoche: null, erstelltAm: fb.fs.serverTimestamp(),
+  });
+}
+
+export const aufgabeUmbenennen = (id, titel) => fb.fs.updateDoc(aufgabeRef(id), { titel });
+
+export const aufgabeLoeschen = (id) => fb.fs.deleteDoc(aufgabeRef(id));
+
+// Neuer Status einer Karte. Wer „Erledigt“ setzt, schreibt im selben Batch einen Verlaufseintrag.
+export function statusSetzen(aufgabe, status, mitgliedId) {
+  const { db, fs } = fb;
+  const woche = aktuelleWoche().schluessel;
+  const batch = fs.writeBatch(db);
+  batch.update(aufgabeRef(aufgabe.id), {
+    status, uebernommenVon: status === 'offen' ? null : mitgliedId, statusWoche: woche,
+  });
+  if (status === 'erledigt') {
+    batch.set(fs.doc(fs.collection(db, 'households', zustand.haushaltId, 'log')), {
+      aufgabe: aufgabe.id, titel: aufgabe.titel, erledigtVon: mitgliedId, zeitpunkt: fs.serverTimestamp(), kw: woche,
+    });
+  }
+  return batch.commit();
+}
+
+export const uebernehmen = (aufgabe, mitgliedId) => statusSetzen(aufgabe, 'uebernommen', mitgliedId);
+export const zurueckgeben = (aufgabe) => statusSetzen(aufgabe, 'offen', null);
+export const erledigen = (aufgabe, mitgliedId) => statusSetzen(aufgabe, 'erledigt', mitgliedId);
+
+// Wochenwechsel physisch nachziehen (die Anzeige rechnet ohnehin schon richtig): veraltete
+// Wochenkarten zurück auf „Offen“, erledigte einmalige Aufgaben aus Vorwochen löschen.
+// Je Karte eine Transaktion, damit zwei Geräte sich nicht in die Quere kommen.
+function wochenwechselSchreiben() {
+  const rolle = zustand.geraet && zustand.geraet.rolle;
+  if (!aufgabenGeladen || (rolle !== 'person' && rolle !== 'anzeige')) return;
+  const woche = aktuelleWoche().schluessel;
+  if (aufgeraeumtFuer === woche) return;
+  aufgeraeumtFuer = woche;
+
+  const { db, fs } = fb;
+  const veraltet = (a) => a.statusWoche && a.statusWoche !== woche;
+  zustand.aufgaben.filter(veraltet).forEach((a) => {
+    const zuruecksetzen = a.typ === 'woche' && a.status !== 'offen';
+    const loeschen = a.typ === 'einmalig' && a.status === 'erledigt' && rolle === 'person';
+    if (!zuruecksetzen && !loeschen) return;
+    fs.runTransaction(db, async (t) => {
+      const snap = await t.get(aufgabeRef(a.id));
+      if (!snap.exists() || !veraltet(snap.data())) return;
+      if (zuruecksetzen) t.update(snap.ref, { status: 'offen', uebernommenVon: null, statusWoche: null });
+      else t.delete(snap.ref);
+    }).catch((fehler) => console.warn('Wochenwechsel nicht geschrieben:', fehler));
+  });
+}
+
 // ---------- Hilfen ----------
 
 function zufallsKennung() {
@@ -283,32 +347,4 @@ function vergissHaushalt() {
   try {
     localStorage.removeItem(HAUSHALT_SCHLUESSEL);
   } catch (e) { /* Speicher nicht verfügbar */ }
-}
-
-// ---------- Aufgaben (bis Phase 3 nur Beispiele im Speicher) ----------
-
-function setzeAufgabe(id, felder) {
-  const aufgabe = zustand.aufgaben.find((a) => a.id === id);
-  if (!aufgabe) return;
-  Object.assign(aufgabe, felder, { statusWoche: aktuelleWoche().schluessel });
-  setze({});
-}
-
-export const uebernehmen = (id, mitgliedId) => setzeAufgabe(id, { status: 'uebernommen', uebernommenVon: mitgliedId });
-export const zurueckgeben = (id) => setzeAufgabe(id, { status: 'offen', uebernommenVon: null });
-// Phase 3: schreibt zusätzlich einen Eintrag in households/{id}/log.
-export const erledigen = (id, mitgliedId) => setzeAufgabe(id, { status: 'erledigt', uebernommenVon: mitgliedId });
-
-export function neueEinmaligeAufgabe(titel, raum) {
-  zustand.aufgaben.push({
-    id: `demo-${Date.now()}`,
-    titel,
-    raum,
-    typ: 'einmalig',
-    aktiv: true,
-    status: 'offen',
-    uebernommenVon: null,
-    statusWoche: null,
-  });
-  setze({});
 }

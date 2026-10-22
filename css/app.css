@@ -110,28 +110,6 @@ select {
   opacity: 0.35;
 }
 
-.beispiel-marke {
-  display: inline-block;
-  padding: 0.05em 0.5em;
-  border: 1px dashed currentColor;
-  border-radius: 999px;
-  font-size: 0.75em;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-.typ-marke {
-  display: inline-block;
-  padding: 0.05em 0.55em;
-  border-radius: 999px;
-  background: var(--rot);
-  color: #fff;
-  font-size: 0.8em;
-  font-weight: 700;
-}
-
 .balken {
   height: 0.6rem;
   border-radius: 999px;
@@ -226,41 +204,6 @@ select {
   font-size: 1.2rem;
 }
 
-.hinweis-beispiel {
-  margin-bottom: 1rem;
-  padding: 0.75rem 0.9rem;
-  border: 2px dashed var(--hinweis-rand);
-  border-radius: var(--radius);
-  background: var(--hinweis-bg);
-  color: var(--hinweis-text);
-  font-size: 0.9rem;
-}
-
-.vorschau-als {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.6rem;
-}
-
-.vorschau-als > span {
-  margin-right: 0.2rem;
-  font-weight: 600;
-}
-
-.vorschau-person {
-  padding: 3px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-}
-
-.vorschau-person[aria-pressed='true'] {
-  box-shadow: 0 0 0 3px var(--hinweis-text);
-}
-
 .fortschritt {
   margin-bottom: 1.25rem;
 }
@@ -321,16 +264,6 @@ select {
   font-size: 1.08rem;
   font-weight: 650;
   line-height: 1.25;
-}
-
-.aufgabe-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin-top: 0.2rem;
-  color: var(--text-2);
-  font-size: 0.85rem;
 }
 
 .aufgabe-aktionen {
@@ -863,7 +796,6 @@ html[data-route='/board'] body {
   overflow: hidden;
   background: var(--b-bg);
   color: var(--b-text);
-  cursor: none;
 }
 
 .board-kopf {
@@ -902,17 +834,6 @@ html[data-route='/board'] body {
 .board-wechsel {
   color: var(--b-text-2);
   font-size: 1.05rem;
-}
-
-.board-demo {
-  padding: 0.35rem 0.9rem;
-  border: 2px dashed var(--gelb);
-  border-radius: 999px;
-  color: var(--gelb);
-  font-size: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .board-fortschritt {
@@ -1022,12 +943,9 @@ html[data-route='/board'] body {
   font-size: 1.35rem;
 }
 
-.karte-text {
+.karte-titel {
   flex: 1;
   min-width: 0;
-}
-
-.karte-titel {
   overflow: hidden;
   font-size: 1.45rem;
   font-weight: 700;
@@ -1035,14 +953,52 @@ html[data-route='/board'] body {
   text-overflow: ellipsis;
 }
 
-.karte-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.2rem;
-  color: var(--b-text-2);
-  font-size: 1.05rem;
-  white-space: nowrap;
+/* Drag & Drop */
+
+.karte {
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.zieht,
+.zieht * {
+  cursor: grabbing;
+}
+
+.karte.wird-gezogen {
+  opacity: 0.3;
+}
+
+.zieh-geist {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.55);
+}
+
+.spalte.ziel {
+  background: #262236;
+  box-shadow: inset 0 0 0 0.2rem var(--spalten-farbe);
+}
+
+.board-dialog {
+  background: #282436;
+  color: #f6f3fb;
+}
+
+.board-dialog .person-knopf {
+  border-color: #3a3550;
+  background: #1b1826;
+  color: inherit;
+}
+
+.board-dialog .knopf-zweit {
+  background: #363149;
+  color: inherit;
 }
 
 .karte-erledigt .karte-titel {
@@ -1072,27 +1028,9 @@ html[data-route='/board'] body {
   font-size: 1rem;
 }
 
-.dicht .karte-text {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
 .dicht .karte-titel {
-  flex: 1;
-  min-width: 0;
   font-size: 1.25rem;
   white-space: nowrap;
-}
-
-.dicht .karte-meta {
-  flex: none;
-  margin-top: 0;
-  font-size: 0.85rem;
-}
-
-.dicht .karte-meta > span:not([class]) {
-  display: none;
 }
 
 /* Stufe 2: zwei Kartenspalten, Titel bis zu zwei Zeilen */
@@ -1100,10 +1038,6 @@ html[data-route='/board'] body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
-}
-
-.zweispaltig .karte-meta {
-  display: none;
 }
 
 .zweispaltig .karte-titel {
@@ -1185,10 +1119,6 @@ html[data-route='/board'] body {
     font-size: 0.9rem;
   }
 
-  .board-demo {
-    font-size: 0.75rem;
-  }
-
   .board-fortschritt {
     order: 4;
     width: 100%;
@@ -1205,10 +1135,6 @@ html[data-route='/board'] body {
 
   .board-uhr {
     display: none;
-  }
-
-  .board-demo {
-    margin-left: auto;
   }
 
   .board-spalten {
@@ -1231,10 +1157,6 @@ html[data-route='/board'] body {
 
   .karte-titel {
     font-size: 1.05rem;
-  }
-
-  .karte-meta {
-    font-size: 0.85rem;
   }
 
   .board-fuss {

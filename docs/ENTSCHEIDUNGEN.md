@@ -39,11 +39,29 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | V19 | „Es reicht mir, **einen einzigen Haushalt** zu haben.“ |
 | V20 | Eine Markdown-Datei mit **allen Designentscheidungen**, insbesondere Christophs Vorgaben, anlegen und **alle künftigen Anweisungen** dort eintragen (diese Datei). |
 | V21 | Die drei Test-Haushalte aus der Entwicklung (`avwg98`, `uh6erm`, `c489xw`) löschen – erledigt am 2026-10-21. |
-| V22 | Phase 3 (echte Aufgaben, live auf allen Geräten) **noch nicht** beginnen – Christoph testet zuerst Phase 2 und gibt dann das Go. |
+| V22 | Phase 3 (echte Aufgaben, live auf allen Geräten) **noch nicht** beginnen – Christoph testet zuerst Phase 2 und gibt dann das Go. *(erledigt durch V23)* |
+
+### 2026-10-22 – nach Christophs Test von Phase 2 (über die Planungssitzung)
+
+| # | Vorgabe |
+| --- | --- |
+| V23 | **Go für Phase 3**: Aufgaben in Firestore, Wochenkarten mit Status-Woche und Reset Sonntag 20:00 (effektiver Status in der Anzeige, Zurücksetzen per Transaktion beim nächsten Laden), einmalige Aufgaben bleiben bis erledigt, jeder Wechsel nach „Erledigt“ schreibt einen Verlaufseintrag, alles in Echtzeit auf allen Geräten. |
+| V24 | **Grundsatz: Features bleiben minimal.** Nichts einbauen, was nicht ausdrücklich verlangt ist („Neue Ideen kommen dann sicher später von alleine“). Was überflüssig wirkt, als Vorschlag nennen statt selbst entfernen. |
+| V25 | **Keine Tags mehr:** kein Raum (Datenfeld, Eingabe, Vorschläge, Sortierung), keine „einmalig“-Marke, kein Zusatz „Wochenaufgabe“. Eine Karte zeigt nur **Titel und Person**. *(ersetzt den Raum aus V8/V11)* |
+| V26 | **Keine Mehrfach-Haushalte im Code:** keine Test-Haushalte, kein Wechsel zwischen Haushalten. Der Pfad `households/{id}` darf bleiben. *(präzisiert V19)* |
+| V27 | **Interaktives Board:** Mauszeiger sichtbar; Karten per **Drag & Drop** (Pointer Events, Maus und Touch) in andere Spalten schieben. Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (Fernseher) → beim Ablegen in „Übernommen“/„Erledigt“ Auswahl der fünf Avatare, sofern die Karte noch niemandem gehört; „Übernommen“ → „Erledigt“ behält die Person; zurück nach „Offen“ entfernt die Person. Die Rolle „Anzeige“ darf dafür Aufgaben ändern und Verlaufseinträge anlegen. *(ersetzt „nur Anzeige, keine Bedienung“ aus V4)* |
+| V28 | **Vorgezogen:** minimale Verwaltung der Wochenaufgaben in den Einstellungen – anlegen, umbenennen, löschen. Christoph trägt seine Liste selbst ein; keine Startliste, keine Demo-Daten mehr. |
+| V29 | **Testen** ohne Test-Haushalte, z. B. mit dem Firestore-Emulator. Am echten Haushalt nur nach Absprache mit Christoph und mit klar markierten Testkarten, die danach wieder entfernt werden. |
 
 ## 2. Designentscheidungen
 
 Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. umgesetzt.
+
+### Grundsatz
+
+| # | Entscheidung | Warum | Quelle |
+| --- | --- | --- | --- |
+| D0 | **Features bleiben minimal.** Gebaut wird nur, was ausdrücklich verlangt ist. Was überflüssig wirkt, wird als Vorschlag genannt statt eigenmächtig entfernt. | „Neue Ideen kommen dann sicher später von alleine.“ | V24 |
 
 ### Plattform und Betrieb
 
@@ -61,29 +79,31 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
 | D7 | Anonyme Firebase-Anmeldung je Gerät, kein Login, kein Passwort. | Kinderleicht, keine Konten nötig. | V7 |
-| D8 | **Genau ein Haushalt.** Christoph richtet ihn einmalig über `#/start?einrichten=1` ein. Dabei entsteht `einrichtung/abgeschlossen`; danach verbieten die Regeln **jede** weitere Neuanlage. Die Startseite zeigt sonst nur „Ich wurde eingeladen“. | Mehr wird nicht gebraucht; Fremde können so gar nichts mehr anlegen. | V19, C |
+| D8 | **Genau ein Haushalt.** Christoph richtet ihn einmalig über `#/start?einrichten=1` ein. Dabei entsteht `einrichtung/abgeschlossen`; danach verbieten die Regeln **jede** weitere Neuanlage. Die Startseite zeigt sonst nur „Ich wurde eingeladen“. Kein Code für Test-Haushalte oder Haushaltswechsel; der Pfad `households/{id}` bleibt. | Mehr wird nicht gebraucht; Fremde können so gar nichts mehr anlegen. | V19, V26, C |
 | D9 | Einladung = Link/QR mit Haushalts-ID und Code (`#/beitreten?h=…&c=…`). Am Fernseher stattdessen den **Einladungscode** abtippen (12 Zeichen in Dreiergruppen, z. B. `C48-9XW-B8Q-FNF`, ohne verwechselbare Zeichen 0/1/i/l/o, Groß-/Kleinschreibung egal). | QR für Handys, kurzer Code für die Fernbedienung; der Teil nach `#` geht nicht an den Server. | V7, C |
-| D10 | Beitritt in zwei Schritten: Gerät meldet sich mit Code an (Rolle „neu“, darf nur lesen), dann „**Ich bin …**“ (Rolle „person“) oder „**Anzeige**“. Eine Anzeige kann sich nicht selbst zur Person machen. | Vor dem Beitritt darf niemand die Mitgliederliste lesen; die Anzeige bleibt sicher schreibgeschützt. | V7, C |
+| D10 | Beitritt in zwei Schritten: Gerät meldet sich mit Code an (Rolle „neu“, darf nur lesen), dann „**Ich bin …**“ (Rolle „person“) oder „**Anzeige**“. Eine Anzeige kann sich nicht selbst zur Person machen. | Vor dem Beitritt darf niemand die Mitgliederliste lesen. | V7, C |
 | D11 | Der Beitrittscode (`households/{id}/geheim/beitritt`) ist für Außenstehende, neue Geräte und Anzeigen nicht lesbar, für Personen-Geräte schon (für den QR-Code). „**Code erneuern**“ macht alte Einladungen ungültig; gekoppelte Geräte bleiben gekoppelt. | Einladungen müssen in den Einstellungen anzeigbar sein. | V7, C |
 | D12 | Geräteliste in den Einstellungen: Personen-Geräte können jedes Gerät entfernen, jedes Gerät kann sich selbst entkoppeln. Entfernte Geräte verlieren sofort den Zugriff und landen auf der Startseite. „Dieses Gerät gehört …“ lässt eine Person ihr Gerät umstellen. | Verlorene Handys oder ein neuer Fernseher lassen sich selbst verwalten. | V11, C |
-| D13 | Der Fernseher ist eine Anzeige: Er sieht immer das Board, ohne Navigation. Start- und Beitrittsseite werden auf großen Bildschirmen größer dargestellt. | Keine Bedienung am TV nötig, Code-Eingabe aus Sofa-Entfernung lesbar. | V4, C |
+| D13 | Der Fernseher ist eine Anzeige: Er sieht immer das Board, ohne Navigation, und darf dort **Karten verschieben** (nur Status, Person, Status-Woche) und Verlaufseinträge anlegen – aber keine Aufgaben anlegen, umbenennen oder löschen, keine Mitglieder oder Geräte ändern. Start- und Beitrittsseite werden auf großen Bildschirmen größer dargestellt. | Interaktives Board auch am TV; alles andere bleibt geschützt. | V4, V27, C |
 | D14 | Der Verlauf (`log`) darf nur ergänzt, nie geändert oder gelöscht werden. | Grundlage für spätere Statistik. | V8 |
 
 ### Aufgabenlogik
 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
-| D15 | Jede Wochenaufgabe ist eine dauerhafte Karte mit `statusWoche`. Die Anzeige berechnet den effektiven Status selbst (`js/woche.js`); das physische Zurücksetzen schreibt das nächste Handy per Transaktion. | Der Fernseher springt pünktlich um, ohne neu zu laden. | V9 |
+| D15 | Jede Wochenaufgabe ist eine dauerhafte Karte mit `statusWoche`. Die Anzeige berechnet den effektiven Status selbst (`js/woche.js`); das physische Zurücksetzen schreibt das nächste Gerät beim Laden, je Karte per Transaktion. | Der Fernseher springt pünktlich um, ohne neu zu laden. | V9, V23 |
 | D16 | Wochenwechsel standardmäßig **Sonntag 20:00**, einstellbar. Eine Putzwoche bekommt die ISO-KW ihrer Mitte (bei So 20:00 die folgende Mo–So-Woche). | Familienabend als natürlicher Abschluss; eindeutige KW. | V9, C |
-| D17 | Einmalige Aufgaben bleiben bis erledigt (auch übernommen über den Wechsel hinweg); erledigte verschwinden beim nächsten Wechsel. | | V10 |
-| D18 | Jeder Klick auf „Erledigt“ schreibt zusätzlich einen `log`-Eintrag (ab Phase 3). | | V9 |
-| D19 | Bis Phase 3 sind die Aufgaben noch **Beispiele im Speicher** und deutlich als solche markiert; Mitglieder und Geräte sind schon echt. | Layout beurteilbar, ohne halbfertige Daten zu speichern. | C |
+| D17 | Einmalige Aufgaben bleiben bis erledigt (auch übernommen über den Wechsel hinweg); erledigte verschwinden beim nächsten Wechsel – das nächste Personen-Gerät löscht sie, der Verlauf behält sie. Anlegen über den Plus-Knopf, nur mit Titel. | | V10, C |
+| D18 | Jeder Wechsel nach „Erledigt“ (Handy-Knopf oder Board) schreibt im selben Batch einen `log`-Eintrag (Aufgabe, Titel, erledigt von, Zeitpunkt, KW). | | V9, V23 |
+| D19 | Eine Karte hat nur **Titel und Person** (Feld `typ` intern für Woche/einmalig) – keine Räume, keine Marken. Sortiert wird nach Titel. Die Regeln lehnen andere Felder ab. | | V25 |
+| D19a | Wochenaufgaben verwalten Personen in den Einstellungen: **anlegen, umbenennen, löschen** – nicht mehr. Keine Startliste, keine Demo-Daten. | | V28 |
 
 ### Gestaltung
 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
-| D20 | Board immer **dunkel**, große Schrift, drei Spalten (Offen grau, Übernommen orange, Erledigt grün), Karte mit Initiale im Farbkreis, Kopfzeile mit KW, Datum, Wechselzeitpunkt, Fortschritt und Uhr, unten Legende der Personen. Skaliert mit dem Bildschirm (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten einzeilig, dann zweispaltig. | Aus Sofa-Entfernung lesbar, ohne Scrollen. | V4, V11, C |
+| D20 | Board immer **dunkel**, große Schrift, drei Spalten (Offen grau, Übernommen orange, Erledigt grün), Karte mit Titel und Initiale im Farbkreis, Kopfzeile mit KW, Datum, Wechselzeitpunkt, Fortschritt und Uhr, unten Legende der Personen. Skaliert mit dem Bildschirm (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten einzeilig, dann zweispaltig. Mauszeiger sichtbar. | Aus Sofa-Entfernung lesbar, ohne Scrollen. | V4, V11, V27, C |
+| D20a | **Drag & Drop am Board** mit Pointer Events: Maus ab 6 px Bewegung, Touch nach 250 ms Gedrückthalten (vorher bewegt = Seite scrollt). Ablegen: Übernommen ↔ Erledigt behält die Person; nach Offen wird sie entfernt; sonst bekommt die Karte die Person des Geräts, und ein Gerät ohne Person (Fernseher) fragt per Avatar-Auswahl. | So kann jeder Karten verschieben, auch am TV. | V27, C |
 | D21 | Handy-Ansichten folgen dem System (hell/dunkel), Navigation unten, „Bei mir“ oben, Plus-Knopf unten rechts. | Gewohnte Bedienung am Android-Handy. | V11, C |
 | D22 | Personenfarben: Christoph Blau `#3b82f6`, Sandra Lila `#a855f7`, Moira Türkis `#14b8a6`, Paula Orange `#f59e0b`, Laura Pink `#ec4899`. Die Initiale wird automatisch hell oder dunkel geschrieben. | Gut unterscheidbar auf dunklem Grund. | C |
 | D23 | Akzentfarbe Teufelsrot `#ff5a4e`, dunkler Grund `#16141f` (auch Theme-Farbe), Grün `#2fbf71` für Erledigt. | Passt zu Name und Icon (Rot/Schwarz/Creme). | C |
@@ -95,5 +115,5 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
-| D27 | Testdaten aus der Entwicklung heißen „TEST – …“ und tragen `test: true`. Nach der Einrichtung des echten Haushalts sind keine neuen Test-Haushalte mehr möglich. | Klar unterscheidbar und leicht zu löschen. | C |
-| D28 | Regeln liegen in `firestore.rules` und werden mit `npx firebase-tools@15.34.0 deploy --only firestore:rules` eingespielt (Christoph meldet die CLI selbst an). Geprüft wird mit `node tools/regeln-pruefen.mjs` gegen die echte Datenbank. | Nachvollziehbar und wiederholbar. | C |
+| D27 | Getestet wird im **Firebase-Emulator** (Auth + Firestore, braucht Java 21). Die App unter `localhost`/`127.0.0.1` spricht automatisch mit dem Emulator, die Live-Seite immer mit der echten Datenbank. Am echten Haushalt wird nur nach Absprache mit Christoph getestet, mit markierten Testkarten, die danach wieder entfernt werden. | Keine Testdaten in der Familien-Datenbank. | V29, C |
+| D28 | Regeln liegen in `firestore.rules` und werden mit `npx firebase-tools@15.34.0 deploy --only firestore:rules` eingespielt (Christoph meldet die CLI selbst an). Geprüft wird vorher im Emulator: `npx firebase-tools@15.34.0 emulators:exec --only auth,firestore "node tools/regeln-pruefen.mjs"`. | Nachvollziehbar und wiederholbar. | V29, C |
