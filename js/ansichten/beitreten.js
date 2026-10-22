@@ -69,8 +69,8 @@ export function beitreten(ziel, parameter) {
         el(
           'section',
           { class: 'einstellung' },
-          el('h2', {}, 'Oder: nur Anzeige'),
-          el('p', { class: 'einstellung-text' }, 'Für den Fernseher: zeigt das Board an, kann aber nichts ändern.'),
+          el('h2', {}, 'Oder: Gerät ohne Person'),
+          el('p', { class: 'einstellung-text' }, 'Für den Fernseher oder einen gemeinsamen Laptop: zeigt das Board. Wer dort eine Karte verschiebt, wählt dabei die Person.'),
           el('button', { class: 'knopf knopf-zweit', type: 'button', disabled: arbeitet, onclick: () => waehlen('anzeige', null) }, '📺 Dieses Gerät ist eine Anzeige'),
         ),
         fehler && el('p', { class: 'meldung meldung-fehler' }, fehler),

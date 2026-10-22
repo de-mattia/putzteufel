@@ -81,7 +81,7 @@ export function einstellungen(ziel) {
           onchange: (e) => ichBinWechseln(e.target.value).catch(fehlgeschlagen),
         }, z.mitglieder.map((m) => el('option', { value: m.id, selected: ichBin() && ichBin().id === m.id }, m.name))))),
 
-      karte('Geräte', 'Jedes gekoppelte Gerät gehört zu einer Person – oder ist eine reine Anzeige.',
+      karte('Geräte', 'Jedes gekoppelte Gerät gehört zu einer Person – oder ist eine Anzeige ohne Person (Fernseher, gemeinsamer Laptop).',
         el('ul', { class: 'liste' }, sortierteGeraete(z).map((g) => el(
           'li',
           {},

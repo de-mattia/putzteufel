@@ -15,8 +15,9 @@ Designentscheidungen mit Begründung** stehen in [ENTSCHEIDUNGEN.md](ENTSCHEIDUN
 - **Kostenlos** betrieben (GitHub Pages + Firebase Spark-Tarif).
 - **Nutzer:** Christoph (Auftraggeber, GitHub-Konto `de-mattia`), Sandra, Moira, Paula, Laura –
   alle mit Android-Handys, Installation über Chrome („Zum Startbildschirm hinzufügen“ / „App installieren“).
-- **Fernseher:** Fire-TV-Stick mit Silk-Browser, 1920×1080, gekoppelt als „Anzeige“. Karten lassen sich dort
-  per Drag & Drop verschieben (Silk-Cursor der Fernbedienung); sonst keine Bedienung.
+- **Fernseher:** Fire-TV-Stick mit Silk-Browser, 1920×1080, gekoppelt als „Anzeige“ – **nur anschauen, keine
+  Bedienung**; das Board läuft dort ohne Eingriff live.
+- **Bedienung des Boards:** mit der Maus, z. B. am Laptop (mit Person oder als gemeinsamer Laptop ohne Person).
 
 ## Architektur
 
@@ -150,7 +151,7 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 
 | Route | Für | Inhalt |
 | --- | --- | --- |
-| `#/board` | Fernseher, Browser | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Uhr; unten Legende der Personen. **Drag & Drop** (Pointer Events; Maus sofort, Touch nach 250 ms Halten): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (Fernseher) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Wake-Lock, wo unterstützt |
+| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Uhr; unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Wake-Lock, wo unterstützt |
 | `#/` | Handy | **„Meine Aufgaben“**: oben **„Bei mir“** mit **✓ Erledigt / Zurückgeben**, darunter **„Noch offen“** mit **Übernehmen**, eingeklappt „Erledigt diese Woche“. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
 | `#/einstellungen` | Handy | **Wochenaufgaben** (anlegen, umbenennen, löschen), **Einladen** (QR-Code, Link, Einladungscode, Code erneuern), **Mitglieder** (live), „Dieses Gerät gehört“, **Geräte** (entfernen/entkoppeln), **Zeitpunkt des Wochenwechsels** (nur Anzeige), App-Infos |
 | `#/start` | neue Geräte | „Ich wurde eingeladen“ mit Feld für den Einladungscode; mit `?einrichten=1` einmalig „Haushalt einrichten“ |
@@ -187,7 +188,6 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 
 - **Testdaten:** Getestet wird nur noch im Emulator. In der echten Datenbank liegen keine Testdaten mehr; übrig
   sind nur anonyme Test-Konten aus Phase 2 unter Authentication → Nutzer (harmlos).
-- **Fire TV:** Ob sich Karten mit dem Silk-Cursor der Fernbedienung ziehen lassen, muss Christoph am Gerät testen.
 - **Gelöschter Browserspeicher:** Löscht jemand die Website-Daten, ist die anonyme Anmeldung weg – das Gerät
   muss neu eingeladen werden; das alte Gerät in der Liste entfernen.
 - **Bildschirmschoner am Fire TV:** Die Wake-Lock-API verhindert ihn vermutlich nicht. Ggf. in den
