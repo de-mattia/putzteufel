@@ -199,11 +199,6 @@ export function rolleWaehlen(rolle, mitgliedId = null) {
   });
 }
 
-export function ichBinWechseln(mitgliedId) {
-  const { db, fs, uid } = fb;
-  return fs.updateDoc(fs.doc(db, 'households', zustand.haushaltId, 'devices', uid), { mitglied: mitgliedId });
-}
-
 export async function geraetEntfernen(uid) {
   if (uid === zustand.uid) return entkoppeln();
   const { db, fs } = fb;

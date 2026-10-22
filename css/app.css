@@ -177,12 +177,6 @@ select {
   padding: 0.5rem 0 1rem;
 }
 
-.kopfleiste-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: none;
-}
-
 .kopfleiste-text {
   flex: 1;
   min-width: 0;
@@ -204,31 +198,6 @@ select {
   font-size: 1.2rem;
 }
 
-.fortschritt {
-  margin-bottom: 1.25rem;
-}
-
-.fortschritt p {
-  margin-bottom: 0.4rem;
-  color: var(--text-2);
-}
-
-.fortschritt strong {
-  color: var(--text);
-}
-
-.abschnitt {
-  margin-bottom: 1.5rem;
-}
-
-.abschnitt h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
-  font-size: 1.1rem;
-}
-
 .anzahl {
   min-width: 1.6rem;
   padding: 0.05rem 0.45rem;
@@ -237,102 +206,6 @@ select {
   color: var(--text-2);
   font-size: 0.85rem;
   text-align: center;
-}
-
-.leer {
-  padding: 1rem;
-  border: 2px dashed var(--linie);
-  border-radius: var(--radius);
-  color: var(--text-2);
-  text-align: center;
-}
-
-.aufgaben-liste {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.aufgabe {
-  padding: 0.85rem 0.95rem;
-  border-radius: var(--radius);
-  background: var(--flaeche);
-  box-shadow: var(--schatten);
-  border: 1px solid var(--linie);
-}
-
-.aufgabe-titel {
-  font-size: 1.08rem;
-  font-weight: 650;
-  line-height: 1.25;
-}
-
-.aufgabe-aktionen {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.aufgabe-aktionen .knopf-gruen {
-  flex: 1;
-}
-
-.aufgabe-kompakt {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.aufgabe-kompakt .aufgabe-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.aufgabe-kompakt .aufgabe-aktionen {
-  margin-top: 0;
-}
-
-.erledigt summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-.erledigt summary::-webkit-details-marker {
-  display: none;
-}
-
-.erledigt summary h2::after {
-  content: '▾';
-  margin-left: auto;
-  color: var(--text-2);
-  transition: transform 0.2s;
-}
-
-.erledigt[open] summary h2::after {
-  transform: rotate(180deg);
-}
-
-.erledigt-liste {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.erledigt-liste li {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.6rem;
-  border-radius: 12px;
-  background: var(--flaeche);
-  color: var(--text-2);
-}
-
-.erledigt-liste .avatar {
-  width: 1.8rem;
-  height: 1.8rem;
-  font-size: 0.85rem;
 }
 
 .plus-knopf {
@@ -384,8 +257,7 @@ select {
 }
 
 .dialog input,
-.wechsel-felder select,
-.wechsel-felder input {
+.zeile-neu input {
   min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--linie);
@@ -401,7 +273,144 @@ select {
   margin-top: 0.25rem;
 }
 
-/* Einstellungen */
+/* Schlichte Listen (Meine Aufgaben, Einstellungen) */
+
+.abschnitt {
+  margin-bottom: 1.4rem;
+}
+
+.abschnitt-titel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.45rem 0.25rem;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gruppe {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  list-style: none;
+}
+
+.zeile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.4rem;
+  margin: 0;
+  padding: 0.45rem 0.6rem 0.45rem 1rem;
+}
+
+.gruppe > li + li {
+  border-top: 1px solid var(--linie);
+}
+
+.zeile-titel {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.zeile-titel small {
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.zeile-knoepfe {
+  display: flex;
+  flex: none;
+  gap: 0.3rem;
+}
+
+.zeile-neu input {
+  flex: 1;
+  min-width: 0;
+}
+
+.leer {
+  margin: 0;
+  padding: 0 0.25rem;
+  color: var(--text-2);
+}
+
+.knopf-ton {
+  background: rgba(255, 90, 78, 0.14);
+  color: var(--rot-tief);
+}
+
+@media (prefers-color-scheme: dark) {
+  .knopf-ton {
+    background: rgba(255, 90, 78, 0.18);
+    color: var(--rot);
+  }
+}
+
+.knopf-leise {
+  background: transparent;
+  color: var(--text-2);
+}
+
+.knopf-symbol {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.knopf-symbol:active {
+  background: var(--flaeche-2);
+}
+
+.mitglieder-reihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.1rem;
+  padding: 0.9rem 1rem;
+}
+
+.mitglied {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.einladen {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.einladen .qr {
+  width: min(12rem, 70%);
+}
+
+.fusszeile {
+  margin-top: 2rem;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Karten auf Start- und Beitrittsseite */
 
 .einstellung {
   margin-bottom: 1rem;
@@ -426,41 +435,6 @@ select {
   margin-top: 0.8rem;
 }
 
-.liste {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.liste li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.55rem 0;
-  border-top: 1px solid var(--linie);
-}
-
-.liste li:first-child {
-  border-top: 0;
-}
-
-.liste-text {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-
-.liste-text span {
-  color: var(--text-2);
-  font-size: 0.85rem;
-}
-
-.liste input[type='checkbox'] {
-  width: 1.3rem;
-  height: 1.3rem;
-  accent-color: var(--gruen);
-}
-
 .qr-platzhalter {
   display: grid;
   place-content: center;
@@ -471,34 +445,6 @@ select {
   color: var(--text-2);
   font-weight: 700;
   text-align: center;
-}
-
-.wechsel-felder {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.wechsel-felder label {
-  display: grid;
-  gap: 0.3rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.app-infos {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.4rem 1rem;
-  margin-bottom: 0;
-}
-
-.app-infos dt {
-  color: var(--text-2);
-}
-
-.app-infos dd {
-  margin: 0;
 }
 
 /* Start, Beitreten, Laden */
@@ -691,16 +637,6 @@ a.knopf {
   border-radius: 50%;
   background: var(--flaeche-2);
   font-size: 1.1rem;
-}
-
-.dieses-geraet {
-  margin-left: 0.5rem;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--flaeche-2);
-  color: var(--text-2);
-  font-size: 0.75rem;
-  font-weight: 600;
 }
 
 /* Am Fernseher (großer Querformat-Bildschirm) Start- und Beitrittsseite größer zeigen */

@@ -1,16 +1,14 @@
-// #/einstellungen – Wochenaufgaben, Einladung (QR-Code), Mitglieder, Geräte, Wochenwechsel.
-// Alles live aus Firestore.
+// #/einstellungen – Wochenaufgaben, Handy einladen (QR-Code), Mitglieder, Geräte,
+// Wochenwechsel. Alles live aus Firestore, als schlichte Listen.
 
 import {
-  holeZustand, abonniere, mitglied, ichBin, ichBinWechseln, geraetEntfernen, codeErneuern,
+  holeZustand, abonniere, mitglied, geraetEntfernen, codeErneuern,
   einladungsLink, einladungsCode, aufgabeAnlegen, aufgabeUmbenennen, aufgabeLoeschen,
 } from '../store.js';
-import { APP_VERSION, firebaseConfig } from '../config.js';
-import { WOCHENTAGE, naechsterWechsel, STANDARD_WECHSEL } from '../woche.js';
-import { el, fuelle, avatar, wechselText, qrCode } from '../ui.js';
+import { APP_VERSION } from '../config.js';
+import { WOCHENTAGE, STANDARD_WECHSEL } from '../woche.js';
+import { el, fuelle, avatar, qrCode } from '../ui.js';
 
-const ROLLEN = { person: 'Person', anzeige: 'Anzeige', neu: 'noch nicht zugeordnet' };
-const datumFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' });
 const fehlgeschlagen = (fehler) => {
   console.error(fehler);
   alert('Das hat nicht geklappt.');
@@ -18,7 +16,6 @@ const fehlgeschlagen = (fehler) => {
 
 export function einstellungen(ziel) {
   const wurzel = el('div', { class: 'seite einstellungen' });
-  const swStatus = el('span', {}, 'wird geprüft …');
   ziel.append(wurzel);
 
   // Bleibt über das Neuzeichnen hinweg erhalten, damit Eingaben nicht verloren gehen.
@@ -26,7 +23,7 @@ export function einstellungen(ziel) {
   const neuForm = el(
     'form',
     {
-      class: 'einladung-form',
+      class: 'zeile zeile-neu',
       onsubmit: (e) => {
         e.preventDefault();
         const titel = neuFeld.value.trim();
@@ -36,16 +33,8 @@ export function einstellungen(ziel) {
       },
     },
     neuFeld,
-    el('button', { class: 'knopf knopf-primaer', type: 'submit' }, 'Hinzufügen'),
+    el('button', { class: 'knopf knopf-primaer knopf-klein', type: 'submit' }, 'Hinzufügen'),
   );
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistration().then((r) => {
-      swStatus.textContent = r && r.active ? 'aktiv' : 'noch nicht aktiv';
-    });
-  } else {
-    swStatus.textContent = 'vom Browser nicht unterstützt';
-  }
 
   const zeichne = () => {
     const z = holeZustand();
@@ -54,75 +43,43 @@ export function einstellungen(ziel) {
     const neuFeldHatteFokus = document.activeElement === neuFeld;
 
     fuelle(wurzel,
-      el(
-        'header',
-        { class: 'kopfleiste' },
-        el('img', { class: 'kopfleiste-logo', src: 'icons/icon-192.png', alt: '', width: 40, height: 40 }),
-        el('div', { class: 'kopfleiste-text' }, el('h1', {}, 'Einstellungen'), el('p', {}, z.haushalt ? z.haushalt.name : '…')),
-      ),
+      el('header', { class: 'kopfleiste' }, el('div', { class: 'kopfleiste-text' }, el('h1', {}, 'Einstellungen'))),
       z.offline && el('p', { class: 'meldung' }, 'Offline – angezeigt wird der zuletzt gespeicherte Stand.'),
 
-      istPerson && wochenaufgaben(z, neuForm),
-
-      istPerson && einladen(z),
-
-      karte('Mitglieder', 'Bearbeiten (Name, Farbe, Profilbild) folgt in Phase 4.',
-        el('ul', { class: 'liste' }, z.mitglieder.map((m) => el(
+      istPerson && abschnitt('Wochenaufgaben', el('ul', { class: 'gruppe' },
+        wochenaufgaben(z).map((a) => el(
           'li',
-          {},
-          avatar(m),
-          el('div', { class: 'liste-text' }, el('strong', {}, m.name), el('span', {}, geraeteVon(z, m.id))),
-        )))),
-
-      istPerson && karte('Dieses Gerät gehört', null,
-        el('label', { class: 'wechsel-felder' }, el('select', {
-          'aria-label': 'Dieses Gerät gehört',
-          onchange: (e) => ichBinWechseln(e.target.value).catch(fehlgeschlagen),
-        }, z.mitglieder.map((m) => el('option', { value: m.id, selected: ichBin() && ichBin().id === m.id }, m.name))))),
-
-      karte('Geräte', 'Jedes gekoppelte Gerät gehört zu einer Person – oder ist eine Anzeige ohne Person (Fernseher, gemeinsamer Laptop).',
-        el('ul', { class: 'liste' }, sortierteGeraete(z).map((g) => el(
-          'li',
-          {},
-          g.mitglied ? avatar(mitglied(g.mitglied)) : el('span', { class: 'geraet-symbol', 'aria-hidden': 'true' }, g.rolle === 'anzeige' ? '📺' : '?'),
-          el(
-            'div',
-            { class: 'liste-text' },
-            el('strong', {}, g.name || 'Gerät', g.id === z.uid && el('span', { class: 'dieses-geraet' }, 'dieses Gerät')),
-            el('span', {}, [
-              g.rolle === 'person' && mitglied(g.mitglied) ? mitglied(g.mitglied).name : ROLLEN[g.rolle] || g.rolle,
-              g.gekoppeltAm && g.gekoppeltAm.toDate ? `gekoppelt am ${datumFormat.format(g.gekoppeltAm.toDate())}` : null,
-            ].filter(Boolean).join(' · ')),
-          ),
-          (istPerson || g.id === z.uid) && el('button', {
-            class: 'knopf knopf-zweit knopf-klein',
-            type: 'button',
-            onclick: () => entfernen(z, g),
-          }, g.id === z.uid ? 'Entkoppeln' : 'Entfernen'),
-        )))),
-
-      karte('Wochenwechsel', `Nächster Wechsel: ${wechselText(naechsterWechsel(new Date(), wechsel))}. Ändern folgt in Phase 4.`,
-        el(
-          'div',
-          { class: 'wechsel-felder' },
-          el('label', {}, 'Tag', el('select', { disabled: true }, WOCHENTAGE.map((tag, i) => el('option', { value: i, selected: i === wechsel.wochentag }, tag)))),
-          el('label', {}, 'Uhrzeit', el('input', {
-            type: 'time',
-            disabled: true,
-            value: `${String(wechsel.stunde).padStart(2, '0')}:${String(wechsel.minute).padStart(2, '0')}`,
-          })),
+          { class: 'zeile' },
+          el('span', { class: 'zeile-titel' }, a.titel),
+          el('span', { class: 'zeile-knoepfe' },
+            el('button', { class: 'knopf-symbol', type: 'button', title: 'Umbenennen', 'aria-label': `${a.titel} umbenennen`, onclick: () => umbenennen(a) }, '✎'),
+            el('button', { class: 'knopf-symbol', type: 'button', title: 'Löschen', 'aria-label': `${a.titel} löschen`, onclick: () => loeschen(a) }, '✕')),
         )),
+        el('li', {}, neuForm))),
 
-      karte('App', null,
-        el(
-          'dl',
-          { class: 'app-infos' },
-          el('dt', {}, 'Version'), el('dd', {}, APP_VERSION),
-          el('dt', {}, 'Offline-Speicher'), el('dd', {}, swStatus),
-          el('dt', {}, 'Läuft als'), el('dd', {}, window.matchMedia('(display-mode: standalone)').matches ? 'installierte App' : 'Webseite im Browser'),
-          el('dt', {}, 'Datenbank'), el('dd', {}, `Firebase ${firebaseConfig.projectId}${z.offline ? ' (offline)' : ''}`),
-          el('dt', {}, 'Haushalt'), el('dd', {}, z.haushaltId || '–'),
-        )),
+      istPerson && abschnitt('Handy einladen', einladen()),
+
+      abschnitt('Mitglieder', el('div', { class: 'gruppe mitglieder-reihe' },
+        z.mitglieder.map((m) => el('div', { class: 'mitglied' }, avatar(m), el('span', {}, m.name))))),
+
+      abschnitt('Geräte', el('ul', { class: 'gruppe' }, sortierteGeraete(z).map((g) => el(
+        'li',
+        { class: 'zeile' },
+        g.mitglied ? avatar(mitglied(g.mitglied)) : el('span', { class: 'geraet-symbol', 'aria-hidden': 'true' }, g.rolle === 'anzeige' ? '📺' : '?'),
+        el('span', { class: 'zeile-titel' },
+          g.id === z.uid ? 'Dieses Gerät' : g.name || 'Gerät',
+          el('small', {}, geraeteText(g))),
+        (istPerson || g.id === z.uid) && el('button', {
+          class: 'knopf knopf-leise knopf-klein',
+          type: 'button',
+          onclick: () => entfernen(z, g),
+        }, g.id === z.uid ? 'Entkoppeln' : 'Entfernen'),
+      )))),
+
+      abschnitt('Wochenwechsel', el('p', { class: 'gruppe zeile' },
+        `${WOCHENTAGE[wechsel.wochentag]}, ${String(wechsel.stunde).padStart(2, '0')}:${String(wechsel.minute).padStart(2, '0')} Uhr`)),
+
+      el('p', { class: 'fusszeile' }, `Putzteufel ${APP_VERSION}`),
     );
     if (neuFeldHatteFokus) neuFeld.focus();
   };
@@ -131,20 +88,13 @@ export function einstellungen(ziel) {
   return abonniere(zeichne);
 }
 
-function wochenaufgaben(z, neuForm) {
-  const liste = z.aufgaben.filter((a) => a.typ === 'woche').sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
-  return karte('Wochenaufgaben', 'Jede Wochenaufgabe ist eine dauerhafte Karte und springt zum Wochenwechsel wieder auf „Offen“.',
-    liste.length
-      ? el('ul', { class: 'liste' }, liste.map((a) => el(
-        'li',
-        {},
-        el('div', { class: 'liste-text' }, el('strong', {}, a.titel)),
-        el('button', { class: 'knopf knopf-zweit knopf-klein', type: 'button', onclick: () => umbenennen(a) }, 'Umbenennen'),
-        el('button', { class: 'knopf knopf-zweit knopf-klein', type: 'button', onclick: () => loeschen(a) }, 'Löschen'),
-      )))
-      : el('p', { class: 'einstellung-text' }, 'Noch keine Wochenaufgaben.'),
-    neuForm);
+function abschnitt(titel, ...inhalt) {
+  return el('section', { class: 'abschnitt' }, el('h2', { class: 'abschnitt-titel' }, titel), inhalt);
 }
+
+const wochenaufgaben = (z) => z.aufgaben
+  .filter((a) => a.typ === 'woche')
+  .sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
 
 function umbenennen(a) {
   const titel = (prompt('Neuer Name der Wochenaufgabe:', a.titel) || '').trim().slice(0, 80);
@@ -155,34 +105,35 @@ function loeschen(a) {
   if (confirm(`Wochenaufgabe „${a.titel}“ löschen?`)) aufgabeLoeschen(a.id).catch(fehlgeschlagen);
 }
 
-function einladen(z) {
+function einladen() {
   const link = einladungsLink();
-  const code = einladungsCode();
-  if (!link) return karte('Einladen', 'Einladung wird geladen …');
+  if (!link) return el('p', { class: 'leer' }, 'Einladung wird geladen …');
 
-  return karte('Einladen', 'Neues Handy: QR-Code mit der Kamera scannen und „Ich bin …“ wählen. Fernseher: Putzteufel im Browser öffnen und den Einladungscode eingeben.',
+  return el(
+    'div',
+    { class: 'gruppe einladen' },
     el('div', { class: 'qr' }, qrCode(link)),
-    el('p', { class: 'einladungs-code', 'aria-label': 'Einladungscode' }, code),
+    el('p', { class: 'einstellung-text' }, 'Mit der Handykamera scannen. Am Fernseher stattdessen diesen Code eingeben:'),
+    el('p', { class: 'einladungs-code', 'aria-label': 'Einladungscode' }, einladungsCode()),
     el(
       'div',
       { class: 'knopf-reihe' },
-      navigator.share && el('button', {
-        class: 'knopf knopf-primaer', type: 'button',
-        onclick: () => navigator.share({ title: 'Putzteufel', text: `Einladung in den Haushalt „${z.haushalt ? z.haushalt.name : ''}“`, url: link }).catch(() => {}),
-      }, 'Link teilen'),
+      navigator.share
+        ? el('button', {
+          class: 'knopf knopf-zweit knopf-klein', type: 'button',
+          onclick: () => navigator.share({ title: 'Putzteufel', text: 'Einladung zum Putzteufel', url: link }).catch(() => {}),
+        }, 'Link teilen')
+        : el('button', { class: 'knopf knopf-zweit knopf-klein', type: 'button', onclick: (e) => kopieren(link, e.currentTarget) }, 'Link kopieren'),
       el('button', {
-        class: 'knopf knopf-zweit', type: 'button',
-        onclick: (e) => kopieren(link, e.currentTarget),
-      }, 'Link kopieren'),
-      el('button', {
-        class: 'knopf knopf-zweit', type: 'button',
+        class: 'knopf knopf-leise knopf-klein', type: 'button',
         onclick: () => {
           if (confirm('Neuen Code erzeugen? Bisherige QR-Codes und Links funktionieren dann nicht mehr. Schon gekoppelte Geräte bleiben gekoppelt.')) {
             codeErneuern().catch(fehlgeschlagen);
           }
         },
       }, 'Code erneuern'),
-    ));
+    ),
+  );
 }
 
 async function kopieren(text, knopf) {
@@ -192,6 +143,11 @@ async function kopieren(text, knopf) {
   } catch (e) {
     prompt('Link zum Kopieren:', text);
   }
+}
+
+function geraeteText(g) {
+  if (g.rolle === 'person') return mitglied(g.mitglied) ? mitglied(g.mitglied).name : 'Person';
+  return g.rolle === 'anzeige' ? `${g.name || 'Gerät'} · ohne Person` : 'noch nicht zugeordnet';
 }
 
 function entfernen(z, g) {
@@ -205,13 +161,4 @@ function entfernen(z, g) {
 function sortierteGeraete(z) {
   const rang = { person: 0, anzeige: 1, neu: 2 };
   return [...z.geraete].sort((a, b) => (a.id === z.uid ? -1 : b.id === z.uid ? 1 : (rang[a.rolle] ?? 3) - (rang[b.rolle] ?? 3)));
-}
-
-function geraeteVon(z, mitgliedId) {
-  const anzahl = z.geraete.filter((g) => g.mitglied === mitgliedId).length;
-  return anzahl === 0 ? 'noch kein Gerät' : anzahl === 1 ? '1 Gerät' : `${anzahl} Geräte`;
-}
-
-function karte(titel, text, ...inhalt) {
-  return el('section', { class: 'einstellung' }, el('h2', {}, titel), text && el('p', { class: 'einstellung-text' }, text), inhalt);
 }

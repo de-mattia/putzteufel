@@ -1,8 +1,8 @@
-// #/ – „Meine Aufgaben“ am Handy: oben „Bei mir“, darunter „Noch offen“,
+// #/ – „Meine Aufgaben“ am Handy: „Bei mir“ und „Offen“ als schlichte Listen,
 // Plus-Knopf für eine einmalige Aufgabe.
 
 import {
-  holeZustand, abonniere, aktuelleWoche, mitglied, ichBin,
+  holeZustand, abonniere, aktuelleWoche, ichBin,
   uebernehmen, zurueckgeben, erledigen, aufgabeAnlegen,
 } from '../store.js';
 import { karten } from '../woche.js';
@@ -31,26 +31,23 @@ export function meineAufgaben(ziel) {
     const alle = karten(zustand.aufgaben, woche.schluessel);
     const beiMir = alle.filter((k) => k.status === 'uebernommen' && k.uebernommenVon === ich.id);
     const offen = alle.filter((k) => k.status === 'offen');
-    const erledigt = alle.filter((k) => k.status === 'erledigt');
 
     fuelle(wurzel,
       el(
         'header',
         { class: 'kopfleiste' },
-        el('img', { class: 'kopfleiste-logo', src: 'icons/icon-192.png', alt: '', width: 40, height: 40 }),
-        el('div', { class: 'kopfleiste-text' }, el('h1', {}, 'Meine Aufgaben'), el('p', {}, `KW ${woche.kw} · Wechsel ${wechselText(woche.ende)}`)),
         ich.id && avatar(ich),
+        el('div', { class: 'kopfleiste-text' },
+          el('h1', {}, ich.id ? `Hallo ${ich.name}` : 'Meine Aufgaben'),
+          el('p', {}, `KW ${woche.kw} · Wechsel ${wechselText(woche.ende)}`)),
       ),
-      alle.length === 0 && el('p', { class: 'leer' }, 'Noch keine Aufgaben – Wochenaufgaben legst du in den Einstellungen an.'),
-      alle.length > 0 && fortschritt(erledigt.length, alle.length),
-      abschnitt('Bei mir', beiMir, (k) => aufgabeKarte(k, [
-        el('button', { class: 'knopf knopf-gruen', type: 'button', onclick: () => erledigen(k, ich.id).catch(fehlgeschlagen) }, '✓ Erledigt'),
-        el('button', { class: 'knopf knopf-zweit', type: 'button', onclick: () => zurueckgeben(k).catch(fehlgeschlagen) }, 'Zurückgeben'),
-      ]), 'Gerade nichts bei dir – übernimm unten eine Aufgabe.'),
-      abschnitt('Noch offen', offen, (k) => aufgabeKarte(k, [
-        el('button', { class: 'knopf knopf-primaer', type: 'button', onclick: () => uebernehmen(k, ich.id).catch(fehlgeschlagen) }, 'Übernehmen'),
-      ], true), alle.length ? 'Alles verteilt!' : 'Nichts offen.'),
-      erledigtListe(erledigt),
+      abschnitt('Bei mir', beiMir, (k) => zeile(k,
+        el('button', { class: 'knopf knopf-gruen knopf-klein', type: 'button', onclick: () => erledigen(k, ich.id).catch(fehlgeschlagen) }, '✓ Erledigt'),
+        el('button', { class: 'knopf knopf-leise knopf-klein', type: 'button', onclick: () => zurueckgeben(k).catch(fehlgeschlagen) }, 'Zurück'),
+      ), 'Gerade nichts übernommen.'),
+      abschnitt('Offen', offen, (k) => zeile(k,
+        el('button', { class: 'knopf knopf-ton knopf-klein', type: 'button', onclick: () => uebernehmen(k, ich.id).catch(fehlgeschlagen) }, 'Übernehmen'),
+      ), alle.length ? 'Alles verteilt!' : 'Noch keine Aufgaben – Wochenaufgaben legst du in den Einstellungen an.'),
     );
   };
 
@@ -58,46 +55,23 @@ export function meineAufgaben(ziel) {
   return abonniere(zeichne);
 }
 
-function fortschritt(erledigt, gesamt) {
-  return el(
-    'section',
-    { class: 'fortschritt' },
-    el('p', {}, 'Diese Woche: ', el('strong', {}, `${erledigt} von ${gesamt}`), ' erledigt'),
-    el('div', { class: 'balken' }, el('div', { class: 'balken-fuellung', style: { width: `${gesamt ? Math.round((erledigt / gesamt) * 100) : 0}%` } })),
-  );
-}
-
-function abschnitt(titel, liste, karteBauen, leerText) {
+function abschnitt(titel, liste, zeileBauen, leerText) {
   return el(
     'section',
     { class: 'abschnitt' },
-    el('h2', {}, titel, el('span', { class: 'anzahl' }, String(liste.length))),
-    liste.length ? el('div', { class: 'aufgaben-liste' }, liste.map(karteBauen)) : el('p', { class: 'leer' }, leerText),
+    el('h2', { class: 'abschnitt-titel' }, titel, liste.length > 0 && el('span', { class: 'anzahl' }, String(liste.length))),
+    liste.length ? el('ul', { class: 'gruppe' }, liste.map(zeileBauen)) : el('p', { class: 'leer' }, leerText),
   );
 }
 
-function aufgabeKarte(k, knoepfe, kompakt = false) {
-  return el(
-    'article',
-    { class: `aufgabe${kompakt ? ' aufgabe-kompakt' : ''}` },
-    el('div', { class: 'aufgabe-text' }, el('div', { class: 'aufgabe-titel' }, k.titel)),
-    el('div', { class: 'aufgabe-aktionen' }, knoepfe),
-  );
-}
-
-function erledigtListe(liste) {
-  return el(
-    'details',
-    { class: 'abschnitt erledigt' },
-    el('summary', {}, el('h2', {}, 'Erledigt diese Woche', el('span', { class: 'anzahl' }, String(liste.length)))),
-    el('ul', { class: 'erledigt-liste' }, liste.map((k) => el('li', {}, avatar(mitglied(k.uebernommenVon)), el('span', {}, k.titel)))),
-  );
+function zeile(k, ...knoepfe) {
+  return el('li', { class: 'zeile' }, el('span', { class: 'zeile-titel' }, k.titel), el('span', { class: 'zeile-knoepfe' }, knoepfe));
 }
 
 function neueAufgabeDialog() {
   const titel = el('input', { name: 'titel', required: true, maxlength: 80, autocomplete: 'off', placeholder: 'z. B. Fenster putzen' });
 
-  const dialog = el(
+  return el(
     'dialog',
     { class: 'dialog' },
     el(
@@ -126,5 +100,4 @@ function neueAufgabeDialog() {
       ),
     ),
   );
-  return dialog;
 }
