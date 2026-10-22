@@ -138,10 +138,11 @@ service cloud.firestore {
         && gueltigerWechsel(neu().wochenwechsel);
       allow delete: if false;
 
-      // Beitrittscode: für Außenstehende nicht lesbar. Die Beitrittsregel unten prüft ihn
-      // per get(). Personen-Geräte dürfen ihn lesen, um den Einladungs-QR-Code zu zeigen.
+      // Beitrittscode: für Außenstehende und neue Geräte nicht lesbar. Die Beitrittsregel unten
+      // prüft ihn per get(). Personen und Anzeigen dürfen ihn lesen, um den Einladungs-QR-Code zu
+      // zeigen (Einstellungen bzw. Join-Knopf am Board).
       match /geheim/{dok} {
-        allow read: if istPerson(hid);
+        allow read: if istPerson(hid) || istAnzeige(hid);
         allow create: if dok == 'beitritt' && istGruender(hid)
           && nurFelder(['code']) && gueltigeKennung(neu().code);
         allow update: if dok == 'beitritt' && istPerson(hid)

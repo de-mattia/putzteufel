@@ -1,3 +1,5 @@
+import { encode } from './vendor/uqr.js';
+
 // Kleine DOM-Helfer. Texte werden immer als Textknoten eingefügt (kein innerHTML),
 // damit spätere Eingaben der Familie nie als HTML ausgeführt werden.
 
@@ -59,5 +61,27 @@ const datumFormat = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'nu
 export const uhrzeit = (d) => uhrzeitFormat.format(d);
 export const datumLang = (d) => datumFormat.format(d);
 export const wechselText = (d) => `${wechselFormat.format(d)} ${uhrzeitFormat.format(d)}`;
+
+// QR-Code als SVG, Module als ein einziger Pfad
+export function qrCode(text) {
+  const { data, size } = encode(text, { ecc: 'M', border: 2 });
+  let pfad = '';
+  data.forEach((zeile, y) => zeile.forEach((an, x) => { if (an) pfad += `M${x},${y}h1v1h-1z`; }));
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'QR-Code mit dem Einladungslink');
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  const hintergrund = document.createElementNS(ns, 'rect');
+  hintergrund.setAttribute('width', size);
+  hintergrund.setAttribute('height', size);
+  hintergrund.setAttribute('fill', '#ffffff');
+  const module = document.createElementNS(ns, 'path');
+  module.setAttribute('d', pfad);
+  module.setAttribute('fill', '#16141f');
+  svg.append(hintergrund, module);
+  return svg;
+}
 
 export const STATUS_NAMEN = { offen: 'Offen', uebernommen: 'Übernommen', erledigt: 'Erledigt' };

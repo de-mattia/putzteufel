@@ -996,6 +996,24 @@ html[data-route='/board'] body {
   color: inherit;
 }
 
+.board-join {
+  min-height: 0;
+  padding: 0.45rem 1.1rem;
+  background: var(--b-karte);
+  color: var(--b-text);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.join-dialog {
+  text-align: center;
+}
+
+.board-qr {
+  width: min(22rem, 70vh, calc(100vw - 6rem));
+  margin: 0 auto;
+}
+
 .board-dialog .knopf-zweit {
   background: #363149;
   color: inherit;

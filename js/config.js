@@ -1,7 +1,7 @@
 // Zentrale Einstellungen der App.
 
 // Bei jeder Veröffentlichung zusammen mit CACHE_VERSION in sw.js erhöhen.
-export const APP_VERSION = '0.3.1';
+export const APP_VERSION = '0.3.2';
 
 // Firebase-Konfiguration der Web-App „putzteufel-web“ im Projekt putzteufel-b6e23.
 //

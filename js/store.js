@@ -21,6 +21,7 @@ const zuhoerer = new Set();
 let fb = null;
 let beobachter = [];
 let aufgabenGeladen = false; // erster Stand der Aufgaben vom Server da?
+let codeBeobachtet = false;
 let aufgeraeumtFuer = null; // Putzwoche, für die der Wochenwechsel schon geschrieben wurde
 
 const zustand = {
@@ -32,7 +33,7 @@ const zustand = {
   geraet: null, // dieses Gerät (households/{id}/devices/{uid})
   mitglieder: [],
   geraete: [],
-  code: null, // Beitrittscode – nur für Personen-Geräte lesbar
+  code: null, // Beitrittscode – für Geräte mit Person und Anzeigen lesbar
   aufgaben: [],
   offline: false,
 };
@@ -80,6 +81,7 @@ function beobachte(hid) {
   Object.assign(zustand, { haushaltId: hid, haushalt: null, geraet: null, mitglieder: [], geraete: [], code: null, aufgaben: [] });
   aufgabenGeladen = false;
   aufgeraeumtFuer = null;
+  codeBeobachtet = false;
 
   const beiFehler = (fehler) => {
     if (fehler.code === 'permission-denied') entkoppelt('Dieses Gerät gehört nicht (mehr) zu diesem Haushalt.');
@@ -92,9 +94,10 @@ function beobachte(hid) {
       if (!snap.metadata.fromCache) entkoppelt('Dieses Gerät wurde aus dem Haushalt entfernt.');
       return;
     }
-    const warPerson = Boolean(zustand.geraet && zustand.geraet.rolle === 'person');
     setze({ phase: 'bereit', meldung: null, geraet: { id: snap.id, ...snap.data() } });
-    if (zustand.geraet.rolle === 'person' && !warPerson) beobachteCode(haushalt);
+    // Den Code erst abfragen, wenn die Rolle beim Server angekommen ist – sonst lehnt er ab.
+    const darfCode = zustand.geraet.rolle === 'person' || zustand.geraet.rolle === 'anzeige';
+    if (darfCode && !codeBeobachtet && !snap.metadata.hasPendingWrites) beobachteCode(haushalt);
     wochenwechselSchreiben();
   }, beiFehler));
 
@@ -120,9 +123,13 @@ function beobachte(hid) {
 
 function beobachteCode(haushalt) {
   const { fs } = fb;
+  codeBeobachtet = true;
   beobachter.push(fs.onSnapshot(fs.doc(haushalt, 'geheim', 'beitritt'), (snap) => {
     setze({ code: snap.exists() ? snap.data().code : null });
-  }, () => setze({ code: null })));
+  }, () => {
+    codeBeobachtet = false; // beim nächsten Stand des Geräts erneut versuchen
+    setze({ code: null });
+  }));
 }
 
 function stoppeBeobachtung() {

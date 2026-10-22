@@ -143,6 +143,7 @@ await erwarte('Aufgabe umbenennen', true, () => schreiben(gruender, [karte('bad'
 console.log('\nFernseher (Anzeige)');
 await erwarte('Beitreten mit richtigem Code direkt als Anzeige', false, () => beitritt(fernseher, code, 'anzeige'));
 await erwarte('Beitreten mit richtigem Code', true, () => beitritt(fernseher, code));
+await erwarte('Beitrittscode lesen, solange noch „neu“', false, () => lesen(fernseher, `${h}/geheim/beitritt`));
 await erwarte('Karte verschieben, solange noch „neu“', false, () => schreiben(fernseher, [karte('bad', { status: 'uebernommen', uebernommenVon: 'sandra', statusWoche: '2026-W43' })]));
 await erwarte('Rolle „Anzeige“ wählen', true, () => rolle(fernseher, 'anzeige'));
 await erwarte('Karte nach „Übernommen“ ziehen (Person gewählt)', true, () => schreiben(fernseher, [karte('bad', { status: 'uebernommen', uebernommenVon: 'sandra', statusWoche: '2026-W43' })]));
@@ -156,7 +157,8 @@ await erwarte('Aufgabe löschen', false, () => schreiben(fernseher, [{ art: 'loe
 await erwarte('Verlaufseintrag mit Zusatzfeld', false, () => schreiben(fernseher, [{ ...eintrag('X'), daten: { aufgabe: 'bad', titel: 'X', erledigtVon: 'sandra', kw: 'x', raum: 'Bad' } }]));
 await erwarte('Sich selbst zur Person machen', false, () => rolle(fernseher, 'person', 'sandra'));
 await erwarte('Mitglied anlegen', false, () => schreiben(fernseher, [{ art: 'anlegen', pfad: `${h}/members/x`, daten: { name: 'X', farbe: '#000000', reihenfolge: 9 } }]));
-await erwarte('Beitrittscode lesen', false, () => lesen(fernseher, `${h}/geheim/beitritt`));
+await erwarte('Beitrittscode lesen (Join-Knopf am Board)', true, () => lesen(fernseher, `${h}/geheim/beitritt`));
+await erwarte('Beitrittscode ändern', false, () => schreiben(fernseher, [{ art: 'setzen', pfad: `${h}/geheim/beitritt`, daten: { code: kennung() } }]));
 await erwarte('Anderes Gerät entfernen', false, () => schreiben(fernseher, [{ art: 'loeschen', pfad: `${h}/devices/${gruender.uid}` }]));
 
 console.log('\nZweites Handy (Person)');

@@ -2,9 +2,9 @@
 // Karten lassen sich per Drag & Drop in eine andere Spalte schieben (Maus sofort,
 // Touch nach kurzem Gedrückthalten). Die Ansicht aktualisiert sich selbst.
 
-import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen } from '../store.js';
+import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen, einladungsLink } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, uhrzeit, datumLang, wechselText, STATUS_NAMEN } from '../ui.js';
+import { el, fuelle, avatar, uhrzeit, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
 
 const SPALTEN = ['offen', 'uebernommen', 'erledigt'];
 const ZIEH_SCHWELLE = 6; // px, ab hier wird aus einem Klick ein Ziehen
@@ -13,7 +13,8 @@ const TOUCH_HALTEN_MS = 250;
 export function board(ziel) {
   const wurzel = el('div', { class: 'board' });
   const auswahl = personenAuswahl();
-  ziel.append(wurzel, auswahl.dialog);
+  const join = joinDialog();
+  ziel.append(wurzel, auswahl.dialog, join.dialog);
 
   let alle = [];
   let nachholen = false;
@@ -32,7 +33,7 @@ export function board(ziel) {
     const erledigt = alle.filter((k) => k.status === 'erledigt').length;
 
     fuelle(wurzel,
-      kopf(jetzt, woche, erledigt, alle.length),
+      kopf(jetzt, woche, erledigt, alle.length, join.zeigen),
       el('div', { class: 'board-spalten' }, SPALTEN.map((status) => spalte(status, alle.filter((k) => k.status === status)))),
       fuss(zustand),
     );
@@ -150,7 +151,7 @@ export function board(ziel) {
   };
 }
 
-function kopf(jetzt, woche, erledigt, gesamt) {
+function kopf(jetzt, woche, erledigt, gesamt, joinZeigen) {
   const anteil = gesamt ? Math.round((erledigt / gesamt) * 100) : 0;
   return el(
     'header',
@@ -183,8 +184,32 @@ function kopf(jetzt, woche, erledigt, gesamt) {
         el('div', { class: 'balken-fuellung', style: { width: `${anteil}%` } }),
       ),
     ),
+    einladungsLink() && el('button', { class: 'knopf board-join', type: 'button', onclick: joinZeigen }, 'Join'),
     el('div', { class: 'board-uhr' }, uhrzeit(jetzt)),
   );
+}
+
+// QR-Code mit dem Einladungslink, damit ein Handy dem Haushalt beitreten kann.
+function joinDialog() {
+  const qr = el('div', { class: 'qr board-qr' });
+  const dialog = el(
+    'dialog',
+    { class: 'dialog board-dialog join-dialog' },
+    el('form', { method: 'dialog' },
+      el('h2', {}, 'Mit dem Handy öffnen'),
+      el('p', { class: 'dialog-hilfe' }, 'QR-Code mit der Handykamera scannen und „Ich bin …“ wählen.'),
+      qr,
+      el('div', { class: 'dialog-knoepfe' }, el('button', { class: 'knopf knopf-zweit' }, 'Schließen'))),
+  );
+
+  function zeigen() {
+    const link = einladungsLink();
+    if (!link) return;
+    fuelle(qr, qrCode(link));
+    dialog.showModal();
+  }
+
+  return { dialog, zeigen };
 }
 
 function spalte(status, liste) {

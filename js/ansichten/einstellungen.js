@@ -7,8 +7,7 @@ import {
 } from '../store.js';
 import { APP_VERSION, firebaseConfig } from '../config.js';
 import { WOCHENTAGE, naechsterWechsel, STANDARD_WECHSEL } from '../woche.js';
-import { encode } from '../vendor/uqr.js';
-import { el, fuelle, avatar, wechselText } from '../ui.js';
+import { el, fuelle, avatar, wechselText, qrCode } from '../ui.js';
 
 const ROLLEN = { person: 'Person', anzeige: 'Anzeige', neu: 'noch nicht zugeordnet' };
 const datumFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' });
@@ -184,28 +183,6 @@ function einladen(z) {
         },
       }, 'Code erneuern'),
     ));
-}
-
-// QR-Code als SVG, Module als ein einziger Pfad
-function qrCode(text) {
-  const { data, size } = encode(text, { ecc: 'M', border: 2 });
-  let pfad = '';
-  data.forEach((zeile, y) => zeile.forEach((an, x) => { if (an) pfad += `M${x},${y}h1v1h-1z`; }));
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'QR-Code mit dem Einladungslink');
-  svg.setAttribute('shape-rendering', 'crispEdges');
-  const hintergrund = document.createElementNS(ns, 'rect');
-  hintergrund.setAttribute('width', size);
-  hintergrund.setAttribute('height', size);
-  hintergrund.setAttribute('fill', '#ffffff');
-  const module = document.createElementNS(ns, 'path');
-  module.setAttribute('d', pfad);
-  module.setAttribute('fill', '#16141f');
-  svg.append(hintergrund, module);
-  return svg;
 }
 
 async function kopieren(text, knopf) {

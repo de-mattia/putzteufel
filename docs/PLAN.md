@@ -85,9 +85,10 @@ CLAUDE.md               Arbeitsregeln für Claude-Sitzungen
      mit `households/{id}/geheim/beitritt` – für das Gerät selbst ist dieses Dokument nicht lesbar.
   2. „**Ich bin …**“ (`rolle: 'person'`, `mitglied`) oder „**Anzeige**“ (`rolle: 'anzeige'`). Dabei wird der Code aus
      dem Gerätedokument entfernt. Aus „anzeige“ kann ein Gerät nicht selbst „person“ werden.
-- **Rollen:** `person` liest und schreibt alles; `anzeige` (Fernseher) liest und darf Karten verschieben (nur
-  `status`, `uebernommenVon`, `statusWoche`) sowie Verlaufseinträge anlegen; `neu` liest nur. Personen-Geräte
-  dürfen den Beitrittscode lesen (für den QR-Code), Anzeigen nicht.
+- **Rollen:** `person` liest und schreibt alles; `anzeige` (Fernseher, gemeinsamer Laptop) liest und darf Karten
+  verschieben (nur `status`, `uebernommenVon`, `statusWoche`) sowie Verlaufseinträge anlegen; `neu` liest nur.
+  Personen und Anzeigen dürfen den Beitrittscode lesen (QR-Code in den Einstellungen bzw. Join-Knopf am Board),
+  ändern dürfen ihn nur Personen. Den Code fragt ein Gerät erst ab, wenn seine Rolle beim Server bestätigt ist.
 - **Geräte:** Liste in den Einstellungen; Personen-Geräte können jedes Gerät entfernen, jedes Gerät kann sich
   selbst entkoppeln. Ein entferntes Gerät verliert sofort den Zugriff und zeigt wieder die Startseite.
 - **Zugang je Gerät** (`js/app.js`): nicht gekoppelt → Startseite (nur „Ich wurde eingeladen“) bzw. Beitritt;
@@ -151,7 +152,7 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 
 | Route | Für | Inhalt |
 | --- | --- | --- |
-| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Uhr; unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Wake-Lock, wo unterstützt |
+| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Initiale im Farbkreis** der Person. Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt**, Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy) und Uhr; unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift); passt eine Spalte nicht, werden ihre Karten kompakter bzw. zweispaltig. Wake-Lock, wo unterstützt |
 | `#/` | Handy | **„Meine Aufgaben“**: oben **„Bei mir“** mit **✓ Erledigt / Zurückgeben**, darunter **„Noch offen“** mit **Übernehmen**, eingeklappt „Erledigt diese Woche“. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
 | `#/einstellungen` | Handy | **Wochenaufgaben** (anlegen, umbenennen, löschen), **Einladen** (QR-Code, Link, Einladungscode, Code erneuern), **Mitglieder** (live), „Dieses Gerät gehört“, **Geräte** (entfernen/entkoppeln), **Zeitpunkt des Wochenwechsels** (nur Anzeige), App-Infos |
 | `#/start` | neue Geräte | „Ich wurde eingeladen“ mit Feld für den Einladungscode; mit `?einrichten=1` einmalig „Haushalt einrichten“ |
