@@ -793,12 +793,6 @@ html[data-route='/board'] body {
   background: var(--b-karte);
 }
 
-.board-uhr {
-  font-size: 2.6rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 .board-spalten {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -847,11 +841,15 @@ html[data-route='/board'] body {
   text-align: center;
 }
 
+/* Raster mit so vielen Zeilen, wie in die Höhe passen. Reichen sie nicht, entsteht von
+   selbst eine weitere, gleich breite Kartenspalte; bei wenigen Karten bleibt es eine. */
 .spalte-liste {
-  display: flex;
+  display: grid;
   flex: 1;
-  flex-direction: column;
-  gap: 0.7rem;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, 3.3rem);
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.45rem 0.6rem;
   min-height: 0;
   overflow: hidden;
 }
@@ -865,28 +863,30 @@ html[data-route='/board'] body {
 
 .karte {
   display: flex;
-  flex: none;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.85rem 1rem;
+  gap: 0.65rem;
+  min-height: 0;
+  padding: 0.3rem 0.7rem;
   border-radius: 0.8rem;
   background: var(--b-karte);
 }
 
 .karte .avatar {
-  width: 2.8rem;
-  height: 2.8rem;
-  font-size: 1.35rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.1rem;
 }
 
 .karte-titel {
+  display: -webkit-box;
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: 1.45rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  line-height: 1.2;
-  text-overflow: ellipsis;
+  line-height: 1.1;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* Drag & Drop */
@@ -962,44 +962,6 @@ html[data-route='/board'] body {
 .karte-erledigt .karte-titel::before {
   content: '✓ ';
   color: var(--gruen);
-}
-
-/* Kompaktstufen, falls eine Spalte nicht auf den Bildschirm passt */
-
-.spalte-liste.dicht {
-  gap: 0.45rem;
-}
-
-/* Stufe 1: einzeilige Karten, Raum ausgeblendet */
-.dicht .karte {
-  gap: 0.7rem;
-  padding: 0.4rem 0.8rem;
-}
-
-.dicht .karte .avatar {
-  width: 2rem;
-  height: 2rem;
-  font-size: 1rem;
-}
-
-.dicht .karte-titel {
-  font-size: 1.25rem;
-  white-space: nowrap;
-}
-
-/* Stufe 2: zwei Kartenspalten, Titel bis zu zwei Zeilen */
-.spalte-liste.zweispaltig {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-}
-
-.zweispaltig .karte-titel {
-  display: -webkit-box;
-  font-size: 1.1rem;
-  white-space: normal;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .board-fuss {
@@ -1087,10 +1049,6 @@ html[data-route='/board'] body {
     font-size: 1.3rem;
   }
 
-  .board-uhr {
-    display: none;
-  }
-
   .board-spalten {
     grid-template-columns: 1fr;
   }
@@ -1111,6 +1069,15 @@ html[data-route='/board'] body {
 
   .karte-titel {
     font-size: 1.05rem;
+  }
+
+  .spalte-liste {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .karte {
+    min-height: 3.2rem;
   }
 
   .board-fuss {

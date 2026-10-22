@@ -1,12 +1,11 @@
-// #/einstellungen – Wochenaufgaben, Handy einladen (QR-Code), Mitglieder, Geräte,
-// Wochenwechsel. Alles live aus Firestore, als schlichte Listen.
+// #/einstellungen – Wochenaufgaben, Handy einladen (QR-Code), Mitglieder, Geräte.
+// Alles live aus Firestore, als schlichte Listen.
 
 import {
   holeZustand, abonniere, mitglied, geraetEntfernen, codeErneuern,
   einladungsLink, einladungsCode, aufgabeAnlegen, aufgabeUmbenennen, aufgabeLoeschen,
 } from '../store.js';
 import { APP_VERSION } from '../config.js';
-import { WOCHENTAGE, STANDARD_WECHSEL } from '../woche.js';
 import { el, fuelle, avatar, qrCode } from '../ui.js';
 
 const fehlgeschlagen = (fehler) => {
@@ -39,7 +38,6 @@ export function einstellungen(ziel) {
   const zeichne = () => {
     const z = holeZustand();
     const istPerson = z.geraet && z.geraet.rolle === 'person';
-    const wechsel = (z.haushalt && z.haushalt.wochenwechsel) || STANDARD_WECHSEL;
     const neuFeldHatteFokus = document.activeElement === neuFeld;
 
     fuelle(wurzel,
@@ -75,9 +73,6 @@ export function einstellungen(ziel) {
           onclick: () => entfernen(z, g),
         }, g.id === z.uid ? 'Entkoppeln' : 'Entfernen'),
       )))),
-
-      abschnitt('Wochenwechsel', el('p', { class: 'gruppe zeile' },
-        `${WOCHENTAGE[wechsel.wochentag]}, ${String(wechsel.stunde).padStart(2, '0')}:${String(wechsel.minute).padStart(2, '0')} Uhr`)),
 
       el('p', { class: 'fusszeile' }, `Putzteufel ${APP_VERSION}`),
     );

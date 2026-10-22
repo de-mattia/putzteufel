@@ -4,7 +4,7 @@
 
 import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen, einladungsLink } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, uhrzeit, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
+import { el, fuelle, avatar, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
 
 const SPALTEN = ['offen', 'uebernommen', 'erledigt'];
 const ZIEH_SCHWELLE = 6; // px, ab hier wird aus einem Klick ein Ziehen
@@ -37,7 +37,6 @@ export function board(ziel) {
       el('div', { class: 'board-spalten' }, SPALTEN.map((status) => spalte(status, alle.filter((k) => k.status === status)))),
       fuss(zustand),
     );
-    wurzel.querySelectorAll('.spalte-liste').forEach(passeAn);
   };
 
   // Wer bekommt die Karte? „Übernommen“ ↔ „Erledigt“ behält die Person, sonst die Person
@@ -134,15 +133,13 @@ export function board(ziel) {
 
   zeichne();
   const abmelden = abonniere(zeichne);
-  // Uhr weiterstellen und pünktlich zum Wochenwechsel umspringen.
+  // Pünktlich zum Wochenwechsel umspringen, auch ohne neue Daten.
   const takt = setInterval(zeichne, 30 * 1000);
-  window.addEventListener('resize', zeichne);
   const wachFreigeben = bildschirmWachHalten();
 
   return () => {
     abmelden();
     clearInterval(takt);
-    window.removeEventListener('resize', zeichne);
     window.removeEventListener('pointermove', beiBewegung);
     window.removeEventListener('pointerup', beiEnde);
     window.removeEventListener('pointercancel', beiAbbruch);
@@ -185,7 +182,6 @@ function kopf(jetzt, woche, erledigt, gesamt, joinZeigen) {
       ),
     ),
     einladungsLink() && el('button', { class: 'knopf board-join', type: 'button', onclick: joinZeigen }, 'Join'),
-    el('div', { class: 'board-uhr' }, uhrzeit(jetzt)),
   );
 }
 
@@ -278,15 +274,6 @@ function personenAuswahl() {
   }
 
   return { dialog, frage };
-}
-
-// Passt eine Spalte nicht auf den Bildschirm, werden die Karten schrittweise
-// kompakter (erst schmaler, dann zweispaltig). Am Handy scrollt die Seite.
-function passeAn(liste) {
-  for (const stufe of ['dicht', 'zweispaltig']) {
-    if (liste.scrollHeight <= liste.clientHeight + 1) return;
-    liste.classList.add(stufe);
-  }
 }
 
 // Bildschirm möglichst wach halten (wirkt nur, wo der Browser die Wake-Lock-API kennt).

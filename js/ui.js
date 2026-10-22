@@ -58,7 +58,6 @@ const uhrzeitFormat = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute
 const wechselFormat = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' });
 const datumFormat = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-export const uhrzeit = (d) => uhrzeitFormat.format(d);
 export const datumLang = (d) => datumFormat.format(d);
 export const wechselText = (d) => `${wechselFormat.format(d)} ${uhrzeitFormat.format(d)}`;
 

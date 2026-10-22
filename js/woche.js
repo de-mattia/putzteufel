@@ -7,8 +7,6 @@ export const STANDARD_WECHSEL = { wochentag: 0, stunde: 20, minute: 0 };
 
 const TAG_MS = 24 * 60 * 60 * 1000;
 
-export const WOCHENTAGE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-
 // Letzter Wechselzeitpunkt, der nicht nach `jetzt` liegt.
 export function letzterWechsel(jetzt = new Date(), wechsel = STANDARD_WECHSEL) {
   const d = new Date(jetzt);
