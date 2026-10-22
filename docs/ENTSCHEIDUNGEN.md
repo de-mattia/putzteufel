@@ -60,6 +60,7 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | --- | --- |
 | V31 | „Bau auf der Übersichtsseite einen Button **Join** ein; wenn man den klickt, kommt ein **QR-Code**, mit dem ich das Ding im Handy öffnen kann.“ |
 | V32 | „Jetzt hätte ich die **Handy-App** gerne noch ein bisschen **cleaner und übersichtlicher**.“ |
+| V33 | GitHub-Warnung zum Firebase-API-Schlüssel als „Won't fix“ schließen – erledigt am 2026-10-22. |
 
 ## 2. Designentscheidungen
 
@@ -80,7 +81,7 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 | D3 | Firestore (Spark), keine Cloud Functions/Storage; alle Logik im Browser, Schutz über Sicherheitsregeln. | Kostenlos. | V6 |
 | D4 | Firebase JS SDK **12.19.0** per CDN, fest gepinnt in `js/config.js`. | Letzte 12er-Version, seit Wochen stabil; 13.x war beim Einbau erst wenige Tage bis zwei Wochen alt. Nur bewusst anheben. | V6, C |
 | D5 | Service Worker: App-Dateien „Netz zuerst“ (nach 4 s bzw. offline aus dem Cache), Firebase SDK „Cache zuerst“. Bei jeder Veröffentlichung `CACHE_VERSION` (sw.js) und `APP_VERSION` (js/config.js) erhöhen – offene Seiten laden dann einmal neu. | Immer aktueller Stand, trotzdem offline nutzbar; der Fernseher aktualisiert sich ohne Bedienung. | C |
-| D6 | Die Firebase-Web-Konfiguration (inkl. API-Schlüssel) liegt öffentlich im Repo; die GitHub-Warnung wird als „Won't fix“ geschlossen. Empfohlen: Schlüssel in der Google Cloud Console auf `https://de-mattia.github.io/*` und `http://localhost:8137/*` beschränken. | Der Schlüssel ist eine Projektkennung und muss ohnehin an jeden Browser ausgeliefert werden; geschützt wird über die Regeln. | V15, V16, C |
+| D6 | Die Firebase-Web-Konfiguration (inkl. API-Schlüssel) liegt öffentlich im Repo; die GitHub-Warnung (Secret-Scanning #1) ist als „Won't fix“ geschlossen. Empfohlen: Schlüssel in der Google Cloud Console auf `https://de-mattia.github.io/*` und `http://localhost:8137/*` beschränken. | Der Schlüssel ist eine Projektkennung und muss ohnehin an jeden Browser ausgeliefert werden; geschützt wird über die Regeln. | V15, V16, V33, C |
 
 ### Anmeldung, Haushalt und Geräte
 
