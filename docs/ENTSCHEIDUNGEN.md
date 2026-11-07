@@ -65,6 +65,12 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | V35 | „Eine **Farbe für Wochenaufgaben** und eine **andere Farbe für einmalige Aufgaben**.“ |
 | V36 | „Das **eigene Profilbild** wäre schon nice.“ (Ausbaustufe „Mein Profil“ aus V12) |
 
+### 2026-11-07 – Einrichtung vereinfachen (über die Planungssitzung)
+
+| # | Vorgabe |
+| --- | --- |
+| V37 | „Mach das ganze noch einfacher – es gibt nur genau einen Haushalt, nämlich **Zuhause**.“ Umsetzung: fester Haushalt „Zuhause“ ohne Namensfeld; Einrichtung direkt auf der Startseite, solange „Zuhause“ noch nicht angelegt ist (kein Sonderlink `?einrichten=1`); kürzerer Einladungscode ohne Haushalts-ID, aber sicher gegen Durchprobieren; falschen Hinweis „Namen und Farben lassen sich später anpassen“ entfernen. *(präzisiert V19/V26)* |
+
 ## 2. Designentscheidungen
 
 Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. umgesetzt.
@@ -91,8 +97,8 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
 | D7 | Anonyme Firebase-Anmeldung je Gerät, kein Login, kein Passwort. | Kinderleicht, keine Konten nötig. | V7 |
-| D8 | **Genau ein Haushalt.** Christoph richtet ihn einmalig über `#/start?einrichten=1` ein. Dabei entsteht `einrichtung/abgeschlossen`; danach verbieten die Regeln **jede** weitere Neuanlage. Die Startseite zeigt sonst nur „Ich wurde eingeladen“. Kein Code für Test-Haushalte oder Haushaltswechsel; der Pfad `households/{id}` bleibt. | Mehr wird nicht gebraucht; Fremde können so gar nichts mehr anlegen. | V19, V26, C |
-| D9 | Einladung = Link/QR mit Haushalts-ID und Code (`#/beitreten?h=…&c=…`). Am Fernseher stattdessen den **Einladungscode** abtippen (12 Zeichen in Dreiergruppen, z. B. `C48-9XW-B8Q-FNF`, ohne verwechselbare Zeichen 0/1/i/l/o, Groß-/Kleinschreibung egal). | QR für Handys, kurzer Code für die Fernbedienung; der Teil nach `#` geht nicht an den Server. | V7, C |
+| D8 | **Genau ein Haushalt: „Zuhause“** (`households/zuhause`, feste ID, kein Name, nichts umzubenennen). Solange er nicht eingerichtet ist, bietet die Startseite direkt **„Zuhause einrichten“** mit „Wer bist du?“ an (kein Sonderlink). Dabei entsteht `einrichtung/abgeschlossen` (für angemeldete Geräte lesbar, damit die Startseite weiß, was sie anbieten soll); danach verbieten die Regeln **jede** weitere Einrichtung, und die Startseite zeigt nur noch „Ich wurde eingeladen“. Gekoppelt ist ein Gerät, wenn sein Gerätedokument existiert – kein `localStorage`. | So einfach wie möglich; Fremde können nach der Einrichtung nichts mehr anlegen. | V19, V26, V37, C |
+| D9 | Einladung = Link/QR mit dem Code (`#/beitreten?c=…`). Am Fernseher stattdessen den **Einladungscode** abtippen: **8 Zeichen** in zwei Vierergruppen, z. B. `K3M9-X2QA`, ohne verwechselbare Zeichen 0/1/i/l/o, Groß-/Kleinschreibung und Leerzeichen egal. 31⁸ ≈ 8,5 · 10¹¹ Möglichkeiten: kurz genug für die Fernbedienung, Durchprobieren aussichtslos; „Code erneuern“ macht alte Codes ungültig. | QR für Handys, kurzer Code für den Fernseher; der Teil nach `#` geht nicht an den Server. | V7, V37, C |
 | D10 | Beitritt in zwei Schritten: Gerät meldet sich mit Code an (Rolle „neu“, darf nur lesen), dann „**Ich bin …**“ (Rolle „person“) oder „**Anzeige**“. Eine Anzeige kann sich nicht selbst zur Person machen. | Vor dem Beitritt darf niemand die Mitgliederliste lesen. | V7, C |
 | D11 | Der Beitrittscode (`households/{id}/geheim/beitritt`) ist für Außenstehende und neue Geräte nicht lesbar, für Personen-Geräte und Anzeigen schon (QR-Code in den Einstellungen bzw. Join-Knopf am Board). Ändern dürfen ihn nur Personen. „**Code erneuern**“ macht alte Einladungen ungültig; gekoppelte Geräte bleiben gekoppelt. | Einladungen müssen anzeigbar sein – auch am Board eines Geräts ohne Person. | V7, V31, C |
 | D12 | Geräteliste in den Einstellungen: Personen-Geräte können jedes Gerät entfernen, jedes Gerät kann sich selbst entkoppeln. Entfernte Geräte verlieren sofort den Zugriff und landen auf der Startseite. „Dieses Gerät gehört …“ lässt eine Person ihr Gerät umstellen. | Verlorene Handys oder ein neuer Fernseher lassen sich selbst verwalten. | V11, C |
@@ -104,7 +110,7 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
 | D15 | Jede Wochenaufgabe ist eine dauerhafte Karte mit `statusWoche`. Die Anzeige berechnet den effektiven Status selbst (`js/woche.js`); das physische Zurücksetzen schreibt das nächste Gerät beim Laden, je Karte per Transaktion. | Der Fernseher springt pünktlich um, ohne neu zu laden. | V9, V23 |
-| D16 | Wochenwechsel fest **Sonntag 20:00** (im Datenmodell als `wochenwechsel` hinterlegt, in der App nicht einstellbar und in den Einstellungen nicht angezeigt). Eine Putzwoche bekommt die ISO-KW ihrer Mitte (bei So 20:00 die folgende Mo–So-Woche). | Familienabend als natürlicher Abschluss; eindeutige KW. | V9, V34, C |
+| D16 | Wochenwechsel fest **Sonntag 20:00** (im Datenmodell als `wochenwechsel` von `households/zuhause` hinterlegt und von den Regeln gegen Änderungen gesperrt; in der App nicht einstellbar und in den Einstellungen nicht angezeigt). Eine Putzwoche bekommt die ISO-KW ihrer Mitte (bei So 20:00 die folgende Mo–So-Woche). | Familienabend als natürlicher Abschluss; eindeutige KW. | V9, V34, C |
 | D17 | Einmalige Aufgaben bleiben bis erledigt (auch übernommen über den Wechsel hinweg); erledigte verschwinden beim nächsten Wechsel – das nächste Personen-Gerät löscht sie, der Verlauf behält sie. Anlegen über den Plus-Knopf, nur mit Titel. | | V10, C |
 | D18 | Jeder Wechsel nach „Erledigt“ (Handy-Knopf oder Board) schreibt im selben Batch einen `log`-Eintrag (Aufgabe, Titel, erledigt von, Zeitpunkt, KW). | | V9, V23 |
 | D19 | Eine Karte hat nur **Titel und Person** (Feld `typ` intern für Woche/einmalig) – keine Räume, keine Marken. Sortiert wird nach Titel. Die Regeln lehnen andere Felder ab. | | V25 |

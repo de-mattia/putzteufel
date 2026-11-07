@@ -1,10 +1,11 @@
-// Datenhaltung der App: Haushalt, Mitglieder, Geräte, Beitrittscode und Aufgaben kommen
+// Datenhaltung der App: Zuhause, Mitglieder, Geräte, Beitrittscode und Aufgaben kommen
 // live aus Firestore. Die Ansichten nutzen nur die exportierten Funktionen.
+// Es gibt genau einen Haushalt mit der festen ID „zuhause“.
 
 import { firebase } from './firebase.js';
 import { putzwoche, STANDARD_WECHSEL } from './woche.js';
 
-// Vorlage für den Haushalt (IDs bleiben, auch wenn Namen später geändert werden).
+// Die Mitglieder von Zuhause (werden beim Einrichten angelegt).
 export const STANDARD_MITGLIEDER = [
   { id: 'christoph', name: 'Christoph', farbe: '#3b82f6' },
   { id: 'sandra', name: 'Sandra', farbe: '#a855f7' },
@@ -13,9 +14,9 @@ export const STANDARD_MITGLIEDER = [
   { id: 'laura', name: 'Laura', farbe: '#ec4899' },
 ];
 
-const HAUSHALT_SCHLUESSEL = 'putzteufel.haushalt';
+const HAUSHALT = 'zuhause';
 const ZEICHEN = '23456789abcdefghjkmnpqrstuvwxyz'; // ohne 0, 1, i, l, o
-const KENNUNG_LAENGE = 6;
+const CODE_LAENGE = 8; // 31^8 ≈ 8,5 · 10^11 Möglichkeiten
 
 const zuhoerer = new Set();
 let fb = null;
@@ -27,8 +28,8 @@ let aufgeraeumtFuer = null; // Putzwoche, für die der Wochenwechsel schon gesch
 const zustand = {
   phase: 'laedt', // laedt | fehler | ungekoppelt | bereit
   meldung: null, // Hinweis für den Startbildschirm, z. B. „Gerät wurde entfernt“
+  eingerichtet: null, // Ist Zuhause schon angelegt? (nur für nicht gekoppelte Geräte)
   uid: null,
-  haushaltId: null,
   haushalt: null,
   geraet: null, // dieses Gerät (households/{id}/devices/{uid})
   mitglieder: [],
@@ -69,29 +70,54 @@ export async function starte() {
     return;
   }
   zustand.uid = fb.uid;
-  const hid = gemerkterHaushalt();
-  if (hid) beobachte(hid);
-  else setze({ phase: 'ungekoppelt' });
+
+  // Gekoppelt? Das eigene Gerätedokument ist nur lesbar, wenn es existiert.
+  try {
+    if ((await fb.fs.getDoc(geraetRef())).exists()) {
+      beobachte();
+      return;
+    }
+  } catch (fehler) {
+    if (fehler.code !== 'permission-denied') {
+      console.error(fehler);
+      setze({ phase: 'fehler', meldung: 'Keine Verbindung zur Datenbank. Bitte Internet prüfen und neu laden.' });
+      return;
+    }
+  }
+  setze({ phase: 'ungekoppelt', eingerichtet: await istEingerichtet() });
 }
 
-function beobachte(hid) {
+// Ist Zuhause schon angelegt? Das Merkdokument darf jedes angemeldete Gerät lesen.
+async function istEingerichtet() {
+  try {
+    return (await fb.fs.getDoc(fb.fs.doc(fb.db, 'einrichtung', 'abgeschlossen'))).exists();
+  } catch (fehler) {
+    console.error(fehler);
+    return true; // im Zweifel nur die Einladung anbieten
+  }
+}
+
+const haushaltRef = () => fb.fs.doc(fb.db, 'households', HAUSHALT);
+const geraetRef = (uid = zustand.uid) => fb.fs.doc(haushaltRef(), 'devices', uid);
+
+function beobachte() {
   stoppeBeobachtung();
-  const { db, fs } = fb;
-  const haushalt = fs.doc(db, 'households', hid);
-  Object.assign(zustand, { haushaltId: hid, haushalt: null, geraet: null, mitglieder: [], geraete: [], code: null, aufgaben: [] });
+  const { fs } = fb;
+  const haushalt = haushaltRef();
+  Object.assign(zustand, { haushalt: null, geraet: null, mitglieder: [], geraete: [], code: null, aufgaben: [] });
   aufgabenGeladen = false;
   aufgeraeumtFuer = null;
   codeBeobachtet = false;
 
   const beiFehler = (fehler) => {
-    if (fehler.code === 'permission-denied') entkoppelt('Dieses Gerät gehört nicht (mehr) zu diesem Haushalt.');
+    if (fehler.code === 'permission-denied') entkoppelt('Dieses Gerät ist nicht mehr gekoppelt.');
     else console.error(fehler);
   };
 
-  beobachter.push(fs.onSnapshot(fs.doc(haushalt, 'devices', zustand.uid), { includeMetadataChanges: true }, (snap) => {
+  beobachter.push(fs.onSnapshot(geraetRef(), { includeMetadataChanges: true }, (snap) => {
     if (!snap.exists()) {
       // Nur der Server (nicht der Offline-Cache) entscheidet, ob das Gerät entfernt wurde.
-      if (!snap.metadata.fromCache) entkoppelt('Dieses Gerät wurde aus dem Haushalt entfernt.');
+      if (!snap.metadata.fromCache) entkoppelt('Dieses Gerät wurde entfernt.');
       return;
     }
     setze({ phase: 'bereit', meldung: null, geraet: { id: snap.id, ...snap.data() } });
@@ -139,125 +165,87 @@ function stoppeBeobachtung() {
 
 function entkoppelt(meldung) {
   stoppeBeobachtung();
-  vergissHaushalt();
   setze({
-    phase: 'ungekoppelt', meldung, haushaltId: null, haushalt: null, geraet: null,
+    phase: 'ungekoppelt', meldung, eingerichtet: true, haushalt: null, geraet: null,
     mitglieder: [], geraete: [], code: null, aufgaben: [],
   });
 }
 
-// ---------- Haushalt einrichten, beitreten, Geräte ----------
+// ---------- Zuhause einrichten, beitreten, Geräte ----------
 
-// Legt den einzigen Haushalt an. Die Firestore-Regeln lassen das nur einmal zu.
-export async function haushaltAnlegen({ name, ichBin: mitgliedId }) {
+// Legt Zuhause an (nur einmal möglich, dafür sorgen die Firestore-Regeln) und koppelt
+// dieses Gerät als die gewählte Person.
+export async function zuhauseEinrichten(mitgliedId) {
   const { db, fs, uid } = fb;
-  const hid = zufallsKennung();
-  const haushalt = fs.doc(db, 'households', hid);
+  const haushalt = haushaltRef();
   const batch = fs.writeBatch(db);
-  batch.set(haushalt, {
-    name, wochenwechsel: { ...STANDARD_WECHSEL }, erstelltAm: fs.serverTimestamp(), erstelltVon: uid,
-  });
-  batch.set(fs.doc(haushalt, 'geheim', 'beitritt'), { code: zufallsKennung() });
+  batch.set(haushalt, { wochenwechsel: { ...STANDARD_WECHSEL }, erstelltAm: fs.serverTimestamp(), erstelltVon: uid });
+  batch.set(fs.doc(haushalt, 'geheim', 'beitritt'), { code: zufallsCode() });
   STANDARD_MITGLIEDER.forEach((m, i) => {
     batch.set(fs.doc(haushalt, 'members', m.id), { name: m.name, farbe: m.farbe, reihenfolge: i });
   });
   batch.set(fs.doc(haushalt, 'devices', uid), {
     rolle: 'person', mitglied: mitgliedId, name: geraeteName(), gekoppeltAm: fs.serverTimestamp(),
   });
-  batch.set(fs.doc(db, 'einrichtung', 'abgeschlossen'), { haushalt: hid, erstelltAm: fs.serverTimestamp() });
+  batch.set(fs.doc(db, 'einrichtung', 'abgeschlossen'), { erstelltAm: fs.serverTimestamp() });
   await batch.commit();
-  merkeHaushalt(hid);
-  beobachte(hid);
+  beobachte();
 }
 
 // Schritt 1 des Beitritts: Gerät mit Code anlegen (Rolle „neu“). Danach „Ich bin …“ wählen.
-export async function beitreten(hid, code) {
-  const { db, fs, uid } = fb;
-  const geraet = fs.doc(db, 'households', hid, 'devices', uid);
-
-  // Schon gekoppelt (z. B. nach gelöschtem Browserspeicher)? Dann nur wieder verbinden.
-  try {
-    if ((await fs.getDoc(geraet)).exists()) {
-      merkeHaushalt(hid);
-      beobachte(hid);
-      return;
-    }
-  } catch (fehler) {
-    if (fehler.code !== 'permission-denied') throw fehler;
-  }
-
-  await fs.setDoc(geraet, { rolle: 'neu', mitglied: null, name: geraeteName(), gekoppeltAm: fs.serverTimestamp(), code });
-  merkeHaushalt(hid);
-  beobachte(hid);
+export async function beitreten(code) {
+  const { fs } = fb;
+  await fs.setDoc(geraetRef(), { rolle: 'neu', mitglied: null, name: geraeteName(), gekoppeltAm: fs.serverTimestamp(), code });
+  beobachte();
 }
 
 // Schritt 2: rolle 'person' mit Mitglied oder 'anzeige'. Entfernt den Code aus dem Gerät.
 export function rolleWaehlen(rolle, mitgliedId = null) {
-  const { db, fs, uid } = fb;
-  return fs.updateDoc(fs.doc(db, 'households', zustand.haushaltId, 'devices', uid), {
-    rolle, mitglied: mitgliedId, code: fs.deleteField(),
-  });
+  return fb.fs.updateDoc(geraetRef(), { rolle, mitglied: mitgliedId, code: fb.fs.deleteField() });
 }
 
 // Profilbild der eigenen Person (die Regeln erlauben nur das eigene).
 export function profilbildSetzen(bild) {
-  const { db, fs } = fb;
-  return fs.updateDoc(fs.doc(db, 'households', zustand.haushaltId, 'members', zustand.geraet.mitglied), { bild });
+  return fb.fs.updateDoc(fb.fs.doc(haushaltRef(), 'members', zustand.geraet.mitglied), { bild });
 }
 
 export async function geraetEntfernen(uid) {
   if (uid === zustand.uid) return entkoppeln();
-  const { db, fs } = fb;
-  return fs.deleteDoc(fs.doc(db, 'households', zustand.haushaltId, 'devices', uid));
+  return fb.fs.deleteDoc(geraetRef(uid));
 }
 
 export async function entkoppeln() {
-  const { db, fs, uid } = fb;
-  const hid = zustand.haushaltId;
   stoppeBeobachtung();
-  if (hid) await fs.deleteDoc(fs.doc(db, 'households', hid, 'devices', uid));
+  await fb.fs.deleteDoc(geraetRef());
   entkoppelt(null);
 }
 
 export function codeErneuern() {
-  const { db, fs } = fb;
-  return fs.setDoc(fs.doc(db, 'households', zustand.haushaltId, 'geheim', 'beitritt'), { code: zufallsKennung() });
+  return fb.fs.setDoc(fb.fs.doc(haushaltRef(), 'geheim', 'beitritt'), { code: zufallsCode() });
 }
 
 // ---------- Einladung ----------
 
 export function einladungsLink() {
-  if (!zustand.haushaltId || !zustand.code) return null;
-  return `${location.origin}${location.pathname}#/beitreten?h=${zustand.haushaltId}&c=${zustand.code}`;
+  return zustand.code ? `${location.origin}${location.pathname}#/beitreten?c=${zustand.code}` : null;
 }
 
-// Zum Abtippen (z. B. am Fernseher): Haushalts-ID und Code, in Dreiergruppen.
+// Zum Abtippen (z. B. am Fernseher): 8 Zeichen in zwei Vierergruppen, z. B. „K3M9-X2QA“.
 export function einladungsCode() {
-  if (!zustand.haushaltId || !zustand.code) return null;
-  return `${zustand.haushaltId}${zustand.code}`.toUpperCase().match(/.{3}/g).join('-');
+  return zustand.code ? zustand.code.toUpperCase().match(/.{4}/g).join('-') : null;
 }
 
 // Liest einen eingegebenen Einladungscode oder einen eingefügten Einladungslink.
 export function leseEinladung(text) {
   const eingabe = String(text || '').trim();
-  const link = eingabe.match(/[?&]h=([^&#\s]+).*?[?&]c=([^&#\s]+)/);
-  if (link) return pruefe(link[1], link[2]);
-  const zeichen = eingabe.toLowerCase().replace(/[^0-9a-z]/g, '');
-  return zeichen.length === 2 * KENNUNG_LAENGE
-    ? pruefe(zeichen.slice(0, KENNUNG_LAENGE), zeichen.slice(KENNUNG_LAENGE))
-    : null;
-}
-
-function pruefe(h, c) {
-  const gueltig = (s) => s.length === KENNUNG_LAENGE && [...s].every((z) => ZEICHEN.includes(z));
-  const hid = h.toLowerCase();
-  const code = c.toLowerCase();
-  return gueltig(hid) && gueltig(code) ? { hid, code } : null;
+  const link = eingabe.match(/[?&]c=([^&#\s]+)/);
+  const code = (link ? link[1] : eingabe).toLowerCase().replace(/[^0-9a-z]/g, '');
+  return code.length === CODE_LAENGE && [...code].every((z) => ZEICHEN.includes(z)) ? code : null;
 }
 
 // ---------- Aufgaben ----------
 
-const aufgabenRef = () => fb.fs.collection(fb.db, 'households', zustand.haushaltId, 'tasks');
+const aufgabenRef = () => fb.fs.collection(haushaltRef(), 'tasks');
 const aufgabeRef = (id) => fb.fs.doc(aufgabenRef(), id);
 
 export function aufgabeAnlegen(titel, typ) {
@@ -279,7 +267,7 @@ export function statusSetzen(aufgabe, status, mitgliedId) {
     status, uebernommenVon: status === 'offen' ? null : mitgliedId, statusWoche: woche,
   });
   if (status === 'erledigt') {
-    batch.set(fs.doc(fs.collection(db, 'households', zustand.haushaltId, 'log')), {
+    batch.set(fs.doc(fs.collection(haushaltRef(), 'log')), {
       aufgabe: aufgabe.id, titel: aufgabe.titel, erledigtVon: mitgliedId, zeitpunkt: fs.serverTimestamp(), kw: woche,
     });
   }
@@ -317,14 +305,14 @@ function wochenwechselSchreiben() {
 
 // ---------- Hilfen ----------
 
-function zufallsKennung() {
+function zufallsCode() {
   const zahlen = crypto.getRandomValues(new Uint8Array(32));
-  let kennung = '';
+  let code = '';
   for (const z of zahlen) {
-    if (z < 248) kennung += ZEICHEN[z % ZEICHEN.length]; // 248 = 8 × 31, gleichverteilt
-    if (kennung.length === KENNUNG_LAENGE) return kennung;
+    if (z < 248) code += ZEICHEN[z % ZEICHEN.length]; // 248 = 8 × 31, gleichverteilt
+    if (code.length === CODE_LAENGE) return code;
   }
-  return zufallsKennung();
+  return zufallsCode();
 }
 
 function geraeteName() {
@@ -335,24 +323,4 @@ function geraeteName() {
   if (/Windows/i.test(ua)) return 'Windows-PC';
   if (/Macintosh/i.test(ua)) return 'Mac';
   return 'Browser';
-}
-
-function gemerkterHaushalt() {
-  try {
-    return localStorage.getItem(HAUSHALT_SCHLUESSEL);
-  } catch (e) {
-    return null;
-  }
-}
-
-function merkeHaushalt(hid) {
-  try {
-    localStorage.setItem(HAUSHALT_SCHLUESSEL, hid);
-  } catch (e) { /* Speicher nicht verfügbar */ }
-}
-
-function vergissHaushalt() {
-  try {
-    localStorage.removeItem(HAUSHALT_SCHLUESSEL);
-  } catch (e) { /* Speicher nicht verfügbar */ }
 }

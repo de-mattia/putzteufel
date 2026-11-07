@@ -30,8 +30,8 @@ service cloud.firestore {
       return /databases/$(database)/documents/households/$(hid)/members/$(mid);
     }
 
-    // Es gibt nur einen Haushalt: Er legt beim Gründen dieses Dokument mit an,
-    // danach ist jede weitere Neuanlage gesperrt.
+    // Es gibt nur einen Haushalt: „zuhause“. Beim Einrichten entsteht dieses Merkdokument mit;
+    // danach ist jede weitere Einrichtung gesperrt.
     function einrichtungPfad() {
       return /databases/$(database)/documents/einrichtung/abgeschlossen;
     }
@@ -74,9 +74,9 @@ service cloud.firestore {
       return neu().diff(resource.data).affectedKeys();
     }
 
-    // Zeichenvorrat ohne verwechselbare Zeichen (0, 1, i, l, o)
-    function gueltigeKennung(text) {
-      return text is string && text.matches('^[2-9a-hjkmnp-z]{6}$');
+    // Beitrittscode: 8 Zeichen ohne verwechselbare Zeichen (0, 1, i, l, o)
+    function gueltigerCode(text) {
+      return text is string && text.matches('^[2-9a-hjkmnp-z]{8}$');
     }
 
     function gueltigerName(text, laenge) {
@@ -115,12 +115,14 @@ service cloud.firestore {
         && gueltigesBild();
     }
 
+    // Jedes angemeldete Gerät darf lesen, ob Zuhause schon eingerichtet ist (Startseite).
     match /einrichtung/{dok} {
-      allow read: if false;
+      allow get: if angemeldet();
+      allow list: if false;
       allow create: if dok == 'abgeschlossen'
-        && nurFelder(['haushalt', 'erstelltAm'])
+        && nurFelder(['erstelltAm'])
         && neu().erstelltAm == request.time
-        && gruendet(neu().haushalt);
+        && gruendet('zuhause');
       allow update, delete: if false;
     }
 
@@ -128,23 +130,18 @@ service cloud.firestore {
       allow get: if gekoppelt(hid);
       allow list: if false;
 
-      // Das erste Gerät legt den Haushalt an und koppelt sich im selben Batch als Person.
-      // Dabei entsteht einrichtung/abgeschlossen, das jede weitere Neuanlage sperrt.
+      // Das erste Gerät richtet „zuhause“ ein und koppelt sich im selben Batch als Person.
+      // Dabei entsteht einrichtung/abgeschlossen, das jede weitere Einrichtung sperrt.
       allow create: if angemeldet()
+        && hid == 'zuhause'
         && !exists(einrichtungPfad())
         && existsAfter(einrichtungPfad())
-        && gueltigeKennung(hid)
-        && nurFelder(['name', 'wochenwechsel', 'erstelltAm', 'erstelltVon'])
+        && nurFelder(['wochenwechsel', 'erstelltAm', 'erstelltVon'])
         && neu().erstelltVon == request.auth.uid
         && neu().erstelltAm == request.time
-        && gueltigerName(neu().name, 60)
         && gueltigerWechsel(neu().wochenwechsel)
         && getAfter(eigenesGeraetPfad(hid)).data.rolle == 'person';
-      allow update: if istPerson(hid)
-        && geaendert().hasOnly(['name', 'wochenwechsel'])
-        && gueltigerName(neu().name, 60)
-        && gueltigerWechsel(neu().wochenwechsel);
-      allow delete: if false;
+      allow update, delete: if false;
 
       // Beitrittscode: für Außenstehende und neue Geräte nicht lesbar. Die Beitrittsregel unten
       // prüft ihn per get(). Personen und Anzeigen dürfen ihn lesen, um den Einladungs-QR-Code zu
@@ -152,9 +149,9 @@ service cloud.firestore {
       match /geheim/{dok} {
         allow read: if istPerson(hid) || istAnzeige(hid);
         allow create: if dok == 'beitritt' && istGruender(hid)
-          && nurFelder(['code']) && gueltigeKennung(neu().code);
+          && nurFelder(['code']) && gueltigerCode(neu().code);
         allow update: if dok == 'beitritt' && istPerson(hid)
-          && nurFelder(['code']) && gueltigeKennung(neu().code);
+          && nurFelder(['code']) && gueltigerCode(neu().code);
         allow delete: if false;
       }
 

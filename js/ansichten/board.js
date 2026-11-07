@@ -185,7 +185,7 @@ function kopf(jetzt, woche, erledigt, gesamt, joinZeigen) {
   );
 }
 
-// QR-Code mit dem Einladungslink, damit ein Handy dem Haushalt beitreten kann.
+// QR-Code mit dem Einladungslink, damit ein Handy beitreten kann.
 function joinDialog() {
   const qr = el('div', { class: 'qr board-qr' });
   const dialog = el(
@@ -241,10 +241,7 @@ function fuss(zustand) {
       el('li', { class: 'legende-typ typ-woche' }, el('span', {}, 'Wochenaufgabe')),
       el('li', { class: 'legende-typ typ-einmalig' }, el('span', {}, 'Einmalig')),
     ),
-    el('p', { class: 'board-hinweis' }, [
-      zustand.haushalt ? zustand.haushalt.name : '',
-      zustand.offline ? 'offline' : '',
-    ].filter(Boolean).join(' · ')),
+    zustand.offline && el('p', { class: 'board-hinweis' }, 'offline'),
   );
 }
 

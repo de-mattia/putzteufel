@@ -148,7 +148,7 @@ function geraeteText(g) {
 function entfernen(z, g) {
   const eigenes = g.id === z.uid;
   const frage = eigenes
-    ? 'Dieses Gerät vom Haushalt entkoppeln? Danach braucht es eine neue Einladung.'
+    ? 'Dieses Gerät entkoppeln? Danach braucht es eine neue Einladung.'
     : `Gerät „${g.name || 'Gerät'}“ entfernen? Es verliert sofort den Zugriff.`;
   if (confirm(frage)) geraetEntfernen(g.id).catch(fehlgeschlagen);
 }

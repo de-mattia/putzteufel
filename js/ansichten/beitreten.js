@@ -1,11 +1,11 @@
-// #/beitreten?h=<haushalt>&c=<code> – Gerät per Einladung koppeln.
+// #/beitreten?c=<code> – Gerät per Einladung koppeln.
 // Schritt 1 (automatisch): Gerät mit Code anlegen. Schritt 2: „Ich bin …“ oder „Anzeige“.
 
 import { holeZustand, abonniere, beitreten as geraetKoppeln, rolleWaehlen, leseEinladung } from '../store.js';
 import { el, fuelle, avatar } from '../ui.js';
 
 export function beitreten(ziel, parameter) {
-  const einladung = leseEinladung(`?h=${parameter.get('h') || ''}&c=${parameter.get('c') || ''}`);
+  const code = leseEinladung(parameter.get('c'));
   const wurzel = el('div', { class: 'seite start' });
   ziel.append(wurzel);
 
@@ -18,7 +18,7 @@ export function beitreten(ziel, parameter) {
     fehler = null;
     zeichne();
     try {
-      await geraetKoppeln(einladung.hid, einladung.code);
+      await geraetKoppeln(code);
     } catch (e) {
       console.error(e);
       fehler = e.code === 'permission-denied'
@@ -54,7 +54,7 @@ export function beitreten(ziel, parameter) {
     // Schritt 2: gekoppelt, aber noch keine Rolle
     if (z.phase === 'bereit' && z.geraet && z.geraet.rolle === 'neu') {
       fuelle(wurzel, kopf, 
-        el('p', { class: 'start-gruss' }, 'Willkommen im Haushalt ', el('strong', {}, z.haushalt ? z.haushalt.name : '…'), '!'),
+        el('p', { class: 'start-gruss' }, 'Willkommen zu Hause!'),
         el(
           'section',
           { class: 'einstellung' },
@@ -89,7 +89,7 @@ export function beitreten(ziel, parameter) {
       return;
     }
 
-    if (!einladung) {
+    if (!code) {
       fuelle(wurzel, kopf, 
         el('p', { class: 'meldung meldung-fehler' }, 'Dieser Einladungslink ist unvollständig.'),
         el('a', { class: 'knopf knopf-zweit', href: '#/start' }, 'Zur Startseite'),
@@ -112,7 +112,7 @@ export function beitreten(ziel, parameter) {
 
   zeichne();
   const abmelden = abonniere(zeichne);
-  if (holeZustand().phase === 'ungekoppelt' && einladung && !gestartet) {
+  if (holeZustand().phase === 'ungekoppelt' && code && !gestartet) {
     gestartet = true;
     koppeln();
   }

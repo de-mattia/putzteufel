@@ -68,18 +68,21 @@ docs/                   PLAN.md (diese Datei), ENTSCHEIDUNGEN.md
 CLAUDE.md               Arbeitsregeln für Claude-Sitzungen
 ```
 
-## Anmeldung, Haushalt und Kopplung (Phase 2, umgesetzt)
+## Anmeldung, Zuhause und Kopplung
 
 - **Kein Google-Login, kein Passwort.** Jedes Gerät meldet sich **anonym** bei Firebase Authentication an
-  (eigene `uid` je Gerät/Browser; die Kopplung merkt sich das Gerät in `localStorage` unter `putzteufel.haushalt`).
-- **Genau ein Haushalt.** Christoph legt ihn einmalig über `…/putzteufel/#/start?einrichten=1` an: Name,
-  die fünf Mitglieder (Farben wie im Gerüst) und „Ich bin …“ – alles in **einem Batch**, zusammen mit
-  `einrichtung/abgeschlossen`. Danach verbieten die Regeln **jede** weitere Neuanlage.
-- **Einladen** (Einstellungen, nur Personen-Geräte): QR-Code mit dem Link
-  `…/putzteufel/#/beitreten?h=<haushalt>&c=<code>` (der Teil nach `#` geht nicht an den Server), „Link teilen“,
-  „Link kopieren“ und der **Einladungscode** zum Abtippen am Fernseher, z. B. `C48-9XW-B8Q-FNF`
-  (Haushalts-ID + Code, je 6 Zeichen aus `23456789abcdefghjkmnpqrstuvwxyz`). „**Code erneuern**“ macht alte
-  Einladungen ungültig.
+  (eigene `uid` je Gerät/Browser). Ob es gekoppelt ist, erkennt die App beim Start am eigenen Gerätedokument
+  `households/zuhause/devices/{uid}` – lesbar nur, wenn es existiert. Kein `localStorage`.
+- **Genau ein Haushalt: „Zuhause“** mit der festen ID `households/zuhause`, ohne Namen. Solange er nicht
+  eingerichtet ist (die Startseite liest dazu `einrichtung/abgeschlossen`), bietet die Startseite
+  **„Zuhause einrichten“** mit „Wer bist du?“ an. Das erste Gerät legt dann in **einem Batch** Zuhause, die fünf
+  Mitglieder (Farben wie im Gerüst), den Beitrittscode, sein Gerät als Person und `einrichtung/abgeschlossen` an.
+  Danach zeigt die Startseite nur noch „Ich wurde eingeladen“, und die Regeln verbieten jede weitere Einrichtung.
+- **Einladen** (Einstellungen bzw. „Join“ am Board, für Personen und Anzeigen): QR-Code mit dem Link
+  `…/putzteufel/#/beitreten?c=<code>` (der Teil nach `#` geht nicht an den Server), ein Link-Knopf und der
+  **Einladungscode** zum Abtippen am Fernseher: **8 Zeichen** in zwei Vierergruppen, z. B. `K3M9-X2QA`, aus
+  `23456789abcdefghjkmnpqrstuvwxyz` (31⁸ ≈ 8,5 · 10¹¹ Möglichkeiten – Durchprobieren über Firestore ist aussichtslos).
+  „**Code erneuern**“ macht alte Einladungen ungültig.
 - **Beitritt in zwei Schritten:**
   1. Das Gerät legt `devices/{uid}` mit `rolle: 'neu'` und dem Code an. Die Regel vergleicht den Code per `get()`
      mit `households/{id}/geheim/beitritt` – für das Gerät selbst ist dieses Dokument nicht lesbar.
@@ -97,11 +100,11 @@ CLAUDE.md               Arbeitsregeln für Claude-Sitzungen
 ## Datenmodell (Firestore)
 
 ```
-einrichtung/abgeschlossen                           nicht lesbar; sperrt weitere Haushalte
-  haushalt (haushaltId), erstelltAm
+einrichtung/abgeschlossen                           von jedem angemeldeten Gerät lesbar; sperrt weitere Einrichtung
+  erstelltAm
 
-households/{haushaltId}                             der einzige Haushalt, ID: 6 Zeichen
-  name, wochenwechsel { wochentag (0 = So … 6 = Sa), stunde, minute }, erstelltAm, erstelltVon (uid)
+households/zuhause                                  der einzige Haushalt („Zuhause“), feste ID, kein Name
+  wochenwechsel { wochentag: 0, stunde: 20, minute: 0 } (fest), erstelltAm, erstelltVon (uid)
 
 households/{haushaltId}/members/{mitgliedId}        Person, ID z. B. "christoph"
   name, farbe ("#rrggbb"), reihenfolge, einstellungen { … },
@@ -120,7 +123,7 @@ households/{haushaltId}/log/{eintragId}             Verlauf – nur anhängen
   aufgabe (aufgabeId), titel, erledigtVon (mitgliedId), zeitpunkt, kw ("2026-W43")
 
 households/{haushaltId}/geheim/beitritt             für Außenstehende nicht lesbar
-  code (6 Zeichen)
+  code (8 Zeichen)
 ```
 
 - Der `log` ist die Grundlage für die spätere Statistik. Regeln: nur `create` (Person oder Anzeige), kein
@@ -157,7 +160,7 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 | `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Avatar** der Person (Profilbild oder Initiale im Farbkreis), **Streifen links in der Typ-Farbe** (Wochenaufgabe graublau, einmalig gelb; Legende unten). Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy); unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein Raster mit so vielen Zeilen, wie passen (10 bei 1080p); darüber hinaus entsteht von selbst eine weitere, gleich breite Kartenspalte – ca. 20 Karten in einer Spalte bleiben so vollständig sichtbar. Wake-Lock, wo unterstützt |
 | `#/` | Handy | **„Meine Aufgaben“**: Gruß mit Avatar (antippen = Profilbild wählen), **„Bei mir“** (✓ Erledigt / Zurück) und **„Offen“** (Übernehmen) als schlichte Listen, Zeilen mit Streifen in der Typ-Farbe. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
 | `#/einstellungen` | Handy | **Wochenaufgaben** (✎ umbenennen, ✕ löschen, Hinzufügen), **Handy einladen** (QR-Code, Einladungscode, ein Knopf „Link teilen“ bzw. „Link kopieren“, Code erneuern), **Mitglieder**, **Geräte** (entfernen/entkoppeln), Versionsangabe |
-| `#/start` | neue Geräte | „Ich wurde eingeladen“ mit Feld für den Einladungscode; mit `?einrichten=1` einmalig „Haushalt einrichten“ |
+| `#/start` | neue Geräte | Solange Zuhause nicht eingerichtet ist: „Zuhause einrichten“ mit „Wer bist du?“. Danach nur „Ich wurde eingeladen“ mit Feld für den Einladungscode |
 | `#/beitreten` | neue Geräte | Koppelt per Einladung und fragt „Wer bist du?“ bzw. „Anzeige“ |
 
 Unten gibt es am Handy eine Navigation mit allen drei Ansichten. Auf großen Querformat-Bildschirmen ist sie im

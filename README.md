@@ -13,8 +13,9 @@ Familien-Putzplan als Kanban-Board – eine Progressive Web App fürs Handy und 
 ## Installieren (Android)
 
 Seite in **Chrome** öffnen → Menü ⋮ → **„App installieren“** bzw. **„Zum Startbildschirm hinzufügen“**.
-Danach den QR-Code aus den Einstellungen eines schon gekoppelten Handys scannen und „Ich bin …“ wählen.
-Am Fernseher stattdessen den Einladungscode eingeben und „Anzeige“ wählen.
+Das allererste Handy richtet „Zuhause“ direkt auf der Startseite ein. Alle weiteren Handys scannen den QR-Code
+(Einstellungen eines gekoppelten Handys oder „Join“ am Board) und wählen „Ich bin …“. Am Fernseher stattdessen
+den 8-stelligen Einladungscode eingeben und „Gerät ohne Person“ wählen.
 
 ## Entwickeln
 

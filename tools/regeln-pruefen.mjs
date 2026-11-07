@@ -18,7 +18,7 @@ if (!FIRESTORE || !AUTH) {
 const DB = `projects/${firebaseConfig.projectId}/databases/(default)/documents`;
 const BASIS = `http://${FIRESTORE}/v1/${DB}`;
 const ZEICHEN = '23456789abcdefghjkmnpqrstuvwxyz';
-const kennung = () => Array.from({ length: 6 }, () => ZEICHEN[Math.floor(Math.random() * ZEICHEN.length)]).join('');
+const kennung = () => Array.from({ length: 8 }, () => ZEICHEN[Math.floor(Math.random() * ZEICHEN.length)]).join('');
 
 // ---------- REST ----------
 
@@ -74,16 +74,16 @@ function schreiben(geraet, vorgaenge) {
 
 const ergebnisse = [];
 
-async function erwarte(beschreibung, erlaubt, versuch) {
+// Erlaubte Lesezugriffe auf ein (noch) fehlendes Dokument antworten mit 404.
+async function erwarte(beschreibung, erlaubt, versuch, erlaubtStatus = [200]) {
   const status = await versuch();
-  const ok = erlaubt ? status === 200 : status === 403;
+  const ok = erlaubt ? erlaubtStatus.includes(status) : status === 403;
   ergebnisse.push(ok);
   console.log(`${ok ? '✓' : '✗'} ${erlaubt ? 'erlaubt ' : 'verboten'}  ${beschreibung}  (HTTP ${status})`);
 }
 
-const hid = kennung();
 const code = kennung();
-const h = `households/${hid}`;
+const h = 'households/zuhause';
 const WECHSEL = { wochentag: 0, stunde: 20, minute: 0 };
 const BILD = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
 
@@ -95,12 +95,12 @@ const neues = await geraetAnmelden();
 const spaet = await geraetAnmelden();
 
 const gruendung = (geraet, haushalt, mitSperre) => [
-  { art: 'anlegen', pfad: `households/${haushalt}`, zeit: ['erstelltAm'], daten: { name: 'Familie', wochenwechsel: WECHSEL, erstelltVon: geraet.uid } },
+  { art: 'anlegen', pfad: `households/${haushalt}`, zeit: ['erstelltAm'], daten: { wochenwechsel: WECHSEL, erstelltVon: geraet.uid } },
   { art: 'anlegen', pfad: `households/${haushalt}/geheim/beitritt`, daten: { code } },
   { art: 'anlegen', pfad: `households/${haushalt}/members/christoph`, daten: { name: 'Christoph', farbe: '#3b82f6', reihenfolge: 0 } },
   { art: 'anlegen', pfad: `households/${haushalt}/members/sandra`, daten: { name: 'Sandra', farbe: '#a855f7', reihenfolge: 1 } },
   { art: 'anlegen', pfad: `households/${haushalt}/devices/${geraet.uid}`, zeit: ['gekoppeltAm'], daten: { rolle: 'person', mitglied: 'christoph', name: 'Prüfung' } },
-  ...(mitSperre ? [{ art: 'anlegen', pfad: 'einrichtung/abgeschlossen', zeit: ['erstelltAm'], daten: { haushalt } }] : []),
+  ...(mitSperre ? [{ art: 'anlegen', pfad: 'einrichtung/abgeschlossen', zeit: ['erstelltAm'], daten: {} }] : []),
 ];
 const beitritt = (geraet, mitCode, neueRolle = 'neu') => schreiben(geraet, [{
   art: 'anlegen', pfad: `${h}/devices/${geraet.uid}`, zeit: ['gekoppeltAm'],
@@ -114,11 +114,15 @@ const eintrag = (titel, erledigtVon = 'sandra') => ({
   art: 'anlegen', pfad: `${h}/log/${kennung()}`, zeit: ['zeitpunkt'], daten: { aufgabe: 'bad', titel, erledigtVon, kw: '2026-W43' },
 });
 
-console.log('Einrichtung (genau ein Haushalt)');
-await erwarte('Haushalt ohne Einrichtungssperre anlegen', false, () => schreiben(gruender, gruendung(gruender, hid, false)));
-await erwarte('Haushalt mit Mitgliedern und Sperre anlegen, als Person koppeln', true, () => schreiben(gruender, gruendung(gruender, hid, true)));
-await erwarte('Zweiten Haushalt anlegen', false, () => schreiben(fremd, gruendung(fremd, kennung(), true)));
-await erwarte('Einrichtungssperre lesen', false, () => lesen(gruender, 'einrichtung/abgeschlossen'));
+console.log('Einrichtung (genau ein Haushalt „zuhause“)');
+await erwarte('Einrichtungsstand lesen ohne Anmeldung', false, () => lesen(null, 'einrichtung/abgeschlossen'));
+await erwarte('Einrichtungsstand lesen, noch nicht eingerichtet', true, () => lesen(fremd, 'einrichtung/abgeschlossen'), [404]);
+await erwarte('Anderen Haushalt als „zuhause“ anlegen', false, () => schreiben(fremd, gruendung(fremd, 'anders', true)));
+await erwarte('Zuhause ohne Einrichtungssperre anlegen', false, () => schreiben(gruender, gruendung(gruender, 'zuhause', false)));
+await erwarte('Zuhause einrichten, als Person koppeln', true, () => schreiben(gruender, gruendung(gruender, 'zuhause', true)));
+await erwarte('Einrichtungsstand lesen (eingerichtet)', true, () => lesen(fremd, 'einrichtung/abgeschlossen'));
+await erwarte('Zuhause ein zweites Mal einrichten', false, () => schreiben(fremd, gruendung(fremd, 'zuhause', true)));
+await erwarte('Zuhause ändern (Wochenwechsel)', false, () => schreiben(gruender, [{ art: 'aendern', pfad: h, daten: { wochenwechsel: { wochentag: 1, stunde: 8, minute: 0 } } }]));
 
 console.log('\nOhne Anmeldung / fremdes Gerät');
 await erwarte('Haushalt lesen ohne Anmeldung', false, () => lesen(null, h));
