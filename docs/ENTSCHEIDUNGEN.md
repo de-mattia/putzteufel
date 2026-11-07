@@ -70,6 +70,7 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | # | Vorgabe |
 | --- | --- |
 | V37 | „Mach das ganze noch einfacher – es gibt nur genau einen Haushalt, nämlich **Zuhause**.“ Umsetzung: fester Haushalt „Zuhause“ ohne Namensfeld; Einrichtung direkt auf der Startseite, solange „Zuhause“ noch nicht angelegt ist (kein Sonderlink `?einrichten=1`); kürzerer Einladungscode ohne Haushalts-ID, aber sicher gegen Durchprobieren; falschen Hinweis „Namen und Farben lassen sich später anpassen“ entfernen. *(präzisiert V19/V26)* |
+| V38 | Den alten Haushalt `cj9qs5` (am 2026-10-21 mit der alten Version angelegt) samt Unterdaten und das alte Sperrdokument `einrichtung/abgeschlossen` endgültig löschen, damit „Zuhause“ frisch eingerichtet werden kann – erledigt am 2026-11-07. |
 
 ## 2. Designentscheidungen
 
