@@ -63,7 +63,7 @@ js/ui.js                DOM-Helfer (el, fuelle), Avatar, Aufwand-Marke/-Umschalt
 js/bildausschnitt.js    Dialog zum Zuschneiden des Profilbilds (verschieben, zoomen)
 js/vendor/uqr.js        QR-Code-Erzeugung (uqr 0.1.3, MIT, unveränderte Kopie)
 js/ansichten/*.js       Ansichten: meine, board, einstellungen, start, beitreten, status
-icons/                  App-Icons, erzeugt aus putzteufel-original.png mit tools/make_icons.py
+icons/                  App-Icons, erzeugt aus putzteufel-icon-quelle.webp mit tools/make_icons.py
 tools/                  make_icons.py, regeln-pruefen.mjs
 docs/                   PLAN.md (diese Datei), ENTSCHEIDUNGEN.md
 CLAUDE.md               Arbeitsregeln für Claude-Sitzungen

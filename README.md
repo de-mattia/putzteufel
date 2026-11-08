@@ -39,7 +39,7 @@ npx firebase-tools@15.34.0 emulators:exec --only auth,firestore "node tools/rege
 ```
 
 Regeln einspielen: `npx firebase-tools@15.34.0 deploy --only firestore:rules`. Icons aus
-`icons/putzteufel-original.png` neu erzeugen: `py tools/make_icons.py` (braucht Pillow).
+`icons/putzteufel-icon-quelle.webp` neu erzeugen: `py tools/make_icons.py` (braucht Pillow).
 
 **Bei jeder Veröffentlichung** `CACHE_VERSION` in `sw.js` und `APP_VERSION` in `js/config.js` erhöhen.
 Neue Dateien zusätzlich in die Liste `APP_SHELL` in `sw.js` eintragen.

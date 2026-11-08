@@ -35,7 +35,7 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | V15 | Phase 0 erledigt: Firebase-Projekt **`putzteufel-b6e23`** (Firestore europe-west3, anonyme Anmeldung, Web-App `putzteufel-web`). Die Web-Konfiguration darf ins öffentliche Repo. |
 | V16 | GitHub meldet den Firebase-API-Schlüssel als „Secret“ → siehe Entscheidung D6. |
 | V17 | Go für **Phase 2** (Datenbank-Anbindung und Kopplung der Geräte). |
-| V18 | **Eigenes App-Icon** von Christoph: Waschbär mit Teufelshörnern, Sprühflasche und Tuch, Schriftzug „Putzteufel“ (Datei `icons/putzteufel-original.png`). Ersetzt das zuvor generierte Icon. |
+| V18 | **Eigenes App-Icon** von Christoph: Waschbär mit Teufelshörnern, Sprühflasche und Tuch, Schriftzug „Putzteufel“ (Datei `icons/putzteufel-original.png`). Ersetzt das zuvor generierte Icon. *(ersetzt durch V41/V42)* |
 | V19 | „Es reicht mir, **einen einzigen Haushalt** zu haben.“ |
 | V20 | Eine Markdown-Datei mit **allen Designentscheidungen**, insbesondere Christophs Vorgaben, anlegen und **alle künftigen Anweisungen** dort eintragen (diese Datei). |
 | V21 | Die drei Test-Haushalte aus der Entwicklung (`avwg98`, `uh6erm`, `c489xw`) löschen – erledigt am 2026-10-21. |
@@ -78,6 +78,13 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | --- | --- |
 | V39 | „Für die Aufgaben einen **Aufwandslevel: klein/groß**.“ Für Wochen- und einmalige Aufgaben; wählbar beim Anlegen und änderbar, wo Aufgaben bearbeitet werden; dezent sichtbar auf Board und Handy (nicht mit Typ- oder Personenfarben verwechselbar); beim Erledigen in den Verlauf schreiben (für eine spätere Statistik, die jetzt nicht gebaut wird). Rückwärtskompatibel: bestehende Aufgaben ohne Aufwand gelten als „klein“; nichts löschen oder umschreiben. |
 | V40 | „Beim Foto auswählen einen **Bereichswähler** einbauen.“ Nach der Fotoauswahl ein quadratischer Ausschnitt zum Verschieben (Finger) und Vergrößern (Schieberegler oder zwei Finger); erst dann speichern; Ergebnis weiter 128 × 128; ohne schwere Bibliothek. |
+
+### 2026-11-08 – neues App-Icon (über die Planungssitzung)
+
+| # | Vorgabe |
+| --- | --- |
+| V41 | „Nimm dieses Bild als App-Icon.“ – Quelle `icons/putzteufel-icon-quelle.webp` (Waschbärkopf mit roten Teufelshörnern im roten Kreis, ohne Schriftzug). Alle Größen daraus; Maskable-Varianten ohne abgeschnittenen Kopf und ohne weiße Ecken; Logo auf Start- und Beitrittsseite tauschen; Quelldatei im Repo behalten. *(ersetzt V18)* |
+| V42 | „Wirf das andere Icon komplett weg, auch beim Laden der Seite.“ – alte Quelle `icons/putzteufel-original.png` und nicht mehr gebrauchte Dateien entfernen, keine Verweise übrig lassen; Startbildschirm der installierten App (Manifest-Icon und `background_color`) auf das neue Icon abstimmen. |
 
 ## 2. Designentscheidungen
 
@@ -137,7 +144,7 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 | D22a | **Profilbild:** Am Handy oben auf den eigenen Avatar tippen (📷) → Foto wählen bzw. aufnehmen → **Bildausschnitt** (eigener kleiner Baustein `js/bildausschnitt.js`, keine Bibliothek): quadratische Vorschau mit rundem Hinweis, verschieben mit Finger/Maus, vergrößern bis 4× per Schieberegler, zwei Fingern oder Mausrad; erst „Übernehmen“ speichert → auf **128 × 128** verkleinert und als JPEG-Data-URL (ca. 10 KB) im Feld `bild` des eigenen Mitglieds gespeichert. Es erscheint überall, wo der Avatar steht (Board-Karten, Legende, Listen), mit einem Ring in der Personenfarbe. Die Regeln erlauben nur das **eigene** Bild, nur `data:image/jpeg;base64,…` bis 100 000 Zeichen; Namen und Farben lassen sich weiterhin nicht ändern. Kein Firebase Storage. | Persönlicher, aber klein und kostenlos. | V12, V36, C |
 | D22 | Personenfarben: Christoph Blau `#3b82f6`, Sandra Lila `#a855f7`, Moira Türkis `#14b8a6`, Paula Orange `#f59e0b`, Laura Pink `#ec4899`. Die Initiale wird automatisch hell oder dunkel geschrieben. | Gut unterscheidbar auf dunklem Grund. | C |
 | D23 | Akzentfarbe Teufelsrot `#ff5a4e`, dunkler Grund `#16141f` (auch Theme-Farbe), Grün `#2fbf71` für Erledigt. | Passt zu Name und Icon (Rot/Schwarz/Creme). | C |
-| D24 | **App-Icon = Christophs Waschbär-Icon.** `tools/make_icons.py` erzeugt daraus: „any“-Icons mit transparenten Ecken, „maskable“-Icons (Inhalt auf 66 % verkleinert auf Creme, damit Android beim Zuschneiden nichts abschneidet) und das Apple-Icon. | Eigenes Design der Familie; Android-taugliche Varianten. | V18, C |
+| D24 | **App-Icon = Christophs Waschbärkopf mit Teufelshörnern im roten Kreis** (Quelle `icons/putzteufel-icon-quelle.webp`; das frühere Icon aus V18 ist komplett entfernt). `tools/make_icons.py` erzeugt daraus: „any“-Icons und Favicon als runden Kreis mit transparenten Ecken (auch Logo auf Lade-, Start- und Beitrittsseite und im Board-Kopf), „maskable“-Icons auf durchgehend rotem Grund mit dem Kopf in der Sicherheitszone (weitester Punkt bei 37 % Radius statt erlaubter 40 %) und das Apple-Icon. Manifest `background_color` = Icon-Rot `#f00b15`, damit der Startbildschirm der installierten App zum Icon passt; `theme_color` bleibt dunkel. | Eigenes Design der Familie; Android schneidet nichts ab, keine weißen Ecken. | V41, V42, C |
 | D25 | Oberfläche, Doku und Bezeichner im Code auf Deutsch. | | V2 |
 | D26 | Texte werden immer als Textknoten eingefügt (Helfer `el()`/`fuelle()` in `js/ui.js`, kein `innerHTML`). | Eingaben der Familie können nie als HTML ausgeführt werden. | C |
 
