@@ -92,9 +92,15 @@ service cloud.firestore {
     }
 
     // Karte: offen ohne Person, sonst mit Person
+    // Aufwand ist freiwillig: ältere Aufgaben und Verlaufseinträge haben ihn nicht (gilt als „klein“).
+    function gueltigerAufwand() {
+      return !('aufwand' in neu()) || neu().aufwand in ['klein', 'gross'];
+    }
+
     function gueltigeAufgabe() {
-      return nurFelder(['titel', 'typ', 'status', 'uebernommenVon', 'statusWoche', 'erstelltAm'])
+      return nurFelder(['titel', 'typ', 'aufwand', 'status', 'uebernommenVon', 'statusWoche', 'erstelltAm'])
         && gueltigerName(neu().titel, 80)
+        && gueltigerAufwand()
         && neu().typ in ['woche', 'einmalig']
         && ((neu().status == 'offen' && neu().uebernommenVon == null)
           || (neu().status in ['uebernommen', 'erledigt'] && neu().uebernommenVon is string))
@@ -219,7 +225,8 @@ service cloud.firestore {
       match /log/{eid} {
         allow read: if gekoppelt(hid);
         allow create: if (istPerson(hid) || istAnzeige(hid))
-          && nurFelder(['aufgabe', 'titel', 'erledigtVon', 'zeitpunkt', 'kw'])
+          && nurFelder(['aufgabe', 'titel', 'erledigtVon', 'zeitpunkt', 'kw', 'aufwand'])
+          && gueltigerAufwand()
           && neu().aufgabe is string
           && gueltigerName(neu().titel, 80)
           && neu().erledigtVon is string

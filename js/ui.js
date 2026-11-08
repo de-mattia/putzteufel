@@ -40,7 +40,6 @@ export function textfarbe(hex) {
 }
 
 const BILD_PRAEFIX = 'data:image/jpeg;base64,';
-const BILD_GROESSE = 128;
 
 // Profilbild (mit Ring in der Personenfarbe) oder Initiale im Farbkreis der Person;
 // leerer Kreis, wenn niemand zugeordnet ist.
@@ -57,20 +56,6 @@ export function avatar(mitglied) {
     },
     bild ? el('img', { src: bild, alt: '' }) : mitglied.name.charAt(0).toUpperCase(),
   );
-}
-
-// Foto quadratisch zuschneiden und auf 128 × 128 verkleinern (JPEG als Data-URL, wenige KB).
-export async function profilbild(datei) {
-  const quelle = await createImageBitmap(datei);
-  const seite = Math.min(quelle.width, quelle.height);
-  const leinwand = document.createElement('canvas');
-  leinwand.width = BILD_GROESSE;
-  leinwand.height = BILD_GROESSE;
-  leinwand.getContext('2d').drawImage(
-    quelle, (quelle.width - seite) / 2, (quelle.height - seite) / 2, seite, seite, 0, 0, BILD_GROESSE, BILD_GROESSE,
-  );
-  quelle.close();
-  return leinwand.toDataURL('image/jpeg', 0.8);
 }
 
 const uhrzeitFormat = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -100,6 +85,22 @@ export function qrCode(text) {
   module.setAttribute('fill', '#16141f');
   svg.append(hintergrund, module);
   return svg;
+}
+
+// Dezente Marke für große Aufgaben (klein ist der Normalfall und bleibt unmarkiert).
+export const grossMarke = () => el('span', { class: 'aufwand-marke' }, 'groß');
+
+// Umschalter klein ↔ groß; ruft beiWechsel mit dem neuen Wert auf.
+export function aufwandUmschalter(aufwand, beiWechsel) {
+  const gross = aufwand === 'gross';
+  return el('button', {
+    class: 'aufwand-wahl',
+    type: 'button',
+    'aria-pressed': String(gross),
+    title: 'Aufwand umschalten',
+    'aria-label': `Aufwand: ${gross ? 'groß' : 'klein'} – umschalten`,
+    onclick: () => beiWechsel(gross ? 'klein' : 'gross'),
+  }, gross ? 'groß' : 'klein');
 }
 
 export const STATUS_NAMEN = { offen: 'Offen', uebernommen: 'Übernommen', erledigt: 'Erledigt' };

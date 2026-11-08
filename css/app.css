@@ -141,6 +141,75 @@ select {
   line-height: 1;
 }
 
+/* Aufwand: dezente Marke ohne Farbe (Farben gehören Personen und Aufgabentypen) */
+.aufwand-marke {
+  display: inline-block;
+  margin-left: 0.45em;
+  padding: 0 0.45em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1.5;
+  opacity: 0.65;
+  vertical-align: middle;
+}
+
+.aufwand-wahl {
+  min-width: 3.4rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--linie);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aufwand-wahl[aria-pressed='true'] {
+  border-color: var(--text-2);
+  color: var(--text);
+}
+
+.ausschnitt-dialog {
+  text-align: center;
+}
+
+.ausschnitt-rahmen {
+  width: 280px;
+  height: 280px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000000;
+}
+
+.ausschnitt-leinwand {
+  display: block;
+  width: 280px;
+  height: 280px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ausschnitt-dialog input[type='range'] {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  accent-color: var(--rot);
+}
+
+.dialog-zeile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .typ-woche {
   --typ-farbe: var(--farbe-woche);
 }
@@ -1004,6 +1073,12 @@ html[data-route='/board'] body {
 .board-dialog .knopf-zweit {
   background: #363149;
   color: inherit;
+}
+
+.karte .aufwand-marke {
+  flex: none;
+  margin-left: 0;
+  font-size: 0.85rem;
 }
 
 .karte-erledigt .karte-titel {

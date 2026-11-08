@@ -4,7 +4,7 @@
 
 import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen, einladungsLink } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
+import { el, fuelle, avatar, grossMarke, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
 
 const SPALTEN = ['offen', 'uebernommen', 'erledigt'];
 const ZIEH_SCHWELLE = 6; // px, ab hier wird aus einem Klick ein Ziehen
@@ -227,6 +227,7 @@ function karte(k) {
     { class: `karte karte-${k.status} typ-${k.typ}`, 'data-id': k.id },
     avatar(mitglied(k.uebernommenVon)),
     el('div', { class: 'karte-titel' }, k.titel),
+    k.aufwand === 'gross' && grossMarke(),
   );
 }
 

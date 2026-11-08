@@ -144,6 +144,10 @@ await erwarte('Einmalige Aufgabe anlegen', true, () => schreiben(gruender, [neue
 await erwarte('Aufgabe mit Raum anlegen', false, () => schreiben(gruender, [neueKarte('x1', { titel: 'X', typ: 'woche', raum: 'Bad', ...OFFEN })]));
 await erwarte('„Offen“ mit Person anlegen', false, () => schreiben(gruender, [neueKarte('x2', { titel: 'X', typ: 'woche', status: 'offen', uebernommenVon: 'sandra', statusWoche: null })]));
 await erwarte('Aufgabe umbenennen', true, () => schreiben(gruender, [karte('bad', { titel: 'Bad & WC putzen' })]));
+await erwarte('Große Aufgabe anlegen', true, () => schreiben(gruender, [neueKarte('fenster', { titel: 'Fenster', typ: 'woche', aufwand: 'gross', ...OFFEN })]));
+await erwarte('Aufgabe mit unbekanntem Aufwand anlegen', false, () => schreiben(gruender, [neueKarte('x3', { titel: 'X', typ: 'woche', aufwand: 'riesig', ...OFFEN })]));
+await erwarte('Aufwand einer älteren Aufgabe (ohne Feld) setzen', true, () => schreiben(gruender, [karte('bad', { aufwand: 'gross' })]));
+await erwarte('Aufwand zurück auf klein', true, () => schreiben(gruender, [karte('bad', { aufwand: 'klein' })]));
 
 console.log('\nFernseher (Anzeige)');
 await erwarte('Beitreten mit richtigem Code direkt als Anzeige', false, () => beitritt(fernseher, code, 'anzeige'));
@@ -157,6 +161,12 @@ await erwarte('Karte nach „Erledigt“ ziehen mit Verlaufseintrag', true, () =
 ]));
 await erwarte('Karte zurück nach „Offen“', true, () => schreiben(fernseher, [karte('bad', OFFEN)]));
 await erwarte('Karte umbenennen', false, () => schreiben(fernseher, [karte('bad', { titel: 'gehackt' })]));
+await erwarte('Aufwand ändern', false, () => schreiben(fernseher, [karte('bad', { aufwand: 'gross' })]));
+await erwarte('Große Karte nach „Erledigt“ mit Aufwand im Verlauf', true, () => schreiben(fernseher, [
+  karte('fenster', { status: 'erledigt', uebernommenVon: 'sandra', statusWoche: '2026-W43' }),
+  { ...eintrag('Fenster'), daten: { aufgabe: 'fenster', titel: 'Fenster', erledigtVon: 'sandra', kw: '2026-W43', aufwand: 'gross' } },
+]));
+await erwarte('Verlaufseintrag mit unbekanntem Aufwand', false, () => schreiben(fernseher, [{ ...eintrag('X'), daten: { aufgabe: 'bad', titel: 'X', erledigtVon: 'sandra', kw: 'x', aufwand: 'riesig' } }]));
 await erwarte('Aufgabe anlegen', false, () => schreiben(fernseher, [neueKarte('tv', { titel: 'TV', typ: 'woche', ...OFFEN })]));
 await erwarte('Aufgabe löschen', false, () => schreiben(fernseher, [{ art: 'loeschen', pfad: `${h}/tasks/keller` }]));
 await erwarte('Verlaufseintrag mit Zusatzfeld', false, () => schreiben(fernseher, [{ ...eintrag('X'), daten: { aufgabe: 'bad', titel: 'X', erledigtVon: 'sandra', kw: 'x', raum: 'Bad' } }]));

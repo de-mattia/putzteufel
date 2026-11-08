@@ -248,13 +248,18 @@ export function leseEinladung(text) {
 const aufgabenRef = () => fb.fs.collection(haushaltRef(), 'tasks');
 const aufgabeRef = (id) => fb.fs.doc(aufgabenRef(), id);
 
-export function aufgabeAnlegen(titel, typ) {
+// Aufwand: 'klein' oder 'gross'. Ältere Aufgaben ohne das Feld gelten als 'klein'.
+export const istGross = (aufgabe) => aufgabe.aufwand === 'gross';
+
+export function aufgabeAnlegen(titel, typ, aufwand = 'klein') {
   return fb.fs.addDoc(aufgabenRef(), {
-    titel, typ, status: 'offen', uebernommenVon: null, statusWoche: null, erstelltAm: fb.fs.serverTimestamp(),
+    titel, typ, aufwand, status: 'offen', uebernommenVon: null, statusWoche: null, erstelltAm: fb.fs.serverTimestamp(),
   });
 }
 
 export const aufgabeUmbenennen = (id, titel) => fb.fs.updateDoc(aufgabeRef(id), { titel });
+
+export const aufwandSetzen = (id, aufwand) => fb.fs.updateDoc(aufgabeRef(id), { aufwand });
 
 export const aufgabeLoeschen = (id) => fb.fs.deleteDoc(aufgabeRef(id));
 
@@ -269,6 +274,7 @@ export function statusSetzen(aufgabe, status, mitgliedId) {
   if (status === 'erledigt') {
     batch.set(fs.doc(fs.collection(haushaltRef(), 'log')), {
       aufgabe: aufgabe.id, titel: aufgabe.titel, erledigtVon: mitgliedId, zeitpunkt: fs.serverTimestamp(), kw: woche,
+      aufwand: istGross(aufgabe) ? 'gross' : 'klein',
     });
   }
   return batch.commit();

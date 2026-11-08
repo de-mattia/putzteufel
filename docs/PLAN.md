@@ -59,7 +59,8 @@ js/config.js            App-Version, Firebase-Konfiguration und SDK-Version
 js/firebase.js          Lädt das SDK, anonyme Anmeldung, Firestore mit Offline-Cache (lokal: Emulator)
 js/store.js             Datenzugriff: Haushalt, Mitglieder, Geräte, Aufgaben, Verlauf live aus Firestore
 js/woche.js             Putzwoche, Kalenderwoche, effektiver Status
-js/ui.js                DOM-Helfer (el, fuelle), Avatar, Formatierung
+js/ui.js                DOM-Helfer (el, fuelle), Avatar, Aufwand-Marke/-Umschalter, Formatierung
+js/bildausschnitt.js    Dialog zum Zuschneiden des Profilbilds (verschieben, zoomen)
 js/vendor/uqr.js        QR-Code-Erzeugung (uqr 0.1.3, MIT, unveränderte Kopie)
 js/ansichten/*.js       Ansichten: meine, board, einstellungen, start, beitreten, status
 icons/                  App-Icons, erzeugt aus putzteufel-original.png mit tools/make_icons.py
@@ -114,13 +115,15 @@ households/{haushaltId}/devices/{uid}               Gerät
   rolle ("person" | "anzeige" | "neu"), mitglied (mitgliedId | null), name (z. B. "Android-Gerät"),
   gekoppeltAm, code (nur während des Beitritts)
 
-households/{haushaltId}/tasks/{aufgabeId}           Aufgabe = Karte (nur Titel und Person, keine Tags)
-  titel, typ ("woche" | "einmalig"), status ("offen" | "uebernommen" | "erledigt"),
+households/{haushaltId}/tasks/{aufgabeId}           Aufgabe = Karte (Titel, Person, Aufwand)
+  titel, typ ("woche" | "einmalig"), aufwand ("klein" | "gross"; fehlt bei älteren Aufgaben = "klein"),
+  status ("offen" | "uebernommen" | "erledigt"),
   uebernommenVon (mitgliedId; null genau dann, wenn "offen"),
   statusWoche ("2026-W43" – Putzwoche, in der der Status gesetzt wurde, oder null), erstelltAm
 
 households/{haushaltId}/log/{eintragId}             Verlauf – nur anhängen
-  aufgabe (aufgabeId), titel, erledigtVon (mitgliedId), zeitpunkt, kw ("2026-W43")
+  aufgabe (aufgabeId), titel, erledigtVon (mitgliedId), zeitpunkt, kw ("2026-W43"),
+  aufwand ("klein" | "gross"; ab v0.6.0, ältere Einträge ohne)
 
 households/{haushaltId}/geheim/beitritt             für Außenstehende nicht lesbar
   code (8 Zeichen)
@@ -129,9 +132,11 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 - Der `log` ist die Grundlage für die spätere Statistik. Regeln: nur `create` (Person oder Anzeige), kein
   `update`/`delete`.
 - Sortierung der Karten: nach Titel.
-- Profilbild (umgesetzt in v0.4.0): Am Handy den eigenen Avatar antippen, Foto wählen; der Browser schneidet es
-  quadratisch zu, verkleinert auf **128×128** und speichert es als JPEG-Data-URL im eigenen Member-Dokument
-  (kein Firebase Storage nötig).
+- Profilbild (v0.4.0, Bildausschnitt seit v0.6.0): Am Handy den eigenen Avatar antippen, Foto wählen, im
+  **Bildausschnitt** verschieben und vergrößern (Finger, Schieberegler, zwei Finger), „Übernehmen“; der Browser
+  verkleinert auf **128×128** und speichert es als JPEG-Data-URL im eigenen Member-Dokument (kein Firebase Storage).
+- Aufwand (v0.6.0): Aufgaben sind klein oder groß; sichtbar ist nur „groß“ als dezente Marke. Der Aufwand steht
+  auch im Verlaufseintrag beim Erledigen.
 
 ## Wochenkarten und Wochenwechsel
 

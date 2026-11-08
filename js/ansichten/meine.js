@@ -6,7 +6,8 @@ import {
   uebernehmen, zurueckgeben, erledigen, aufgabeAnlegen, profilbildSetzen,
 } from '../store.js';
 import { karten } from '../woche.js';
-import { el, fuelle, avatar, wechselText, profilbild } from '../ui.js';
+import { el, fuelle, avatar, wechselText, grossMarke, aufwandUmschalter } from '../ui.js';
+import { bildAusschnitt } from '../bildausschnitt.js';
 
 const fehlgeschlagen = (fehler) => {
   console.error(fehler);
@@ -25,7 +26,8 @@ export function meineAufgaben(ziel) {
       e.target.value = '';
       if (!datei) return;
       try {
-        await profilbildSetzen(await profilbild(datei));
+        const bild = await bildAusschnitt(datei);
+        if (bild) await profilbildSetzen(bild);
       } catch (fehler) {
         fehlgeschlagen(fehler);
       }
@@ -86,11 +88,23 @@ function abschnitt(titel, liste, zeileBauen, leerText) {
 }
 
 function zeile(k, ...knoepfe) {
-  return el('li', { class: `zeile typ-${k.typ}` }, el('span', { class: 'zeile-titel' }, k.titel), el('span', { class: 'zeile-knoepfe' }, knoepfe));
+  return el(
+    'li',
+    { class: `zeile typ-${k.typ}` },
+    el('span', { class: 'zeile-titel' }, el('span', {}, k.titel, k.aufwand === 'gross' && grossMarke())),
+    el('span', { class: 'zeile-knoepfe' }, knoepfe),
+  );
 }
 
 function neueAufgabeDialog() {
   const titel = el('input', { name: 'titel', required: true, maxlength: 80, autocomplete: 'off', placeholder: 'z. B. Fenster putzen' });
+  let aufwand = 'klein';
+  const aufwandPlatz = el('span');
+  const zeigeAufwand = () => fuelle(aufwandPlatz, aufwandUmschalter(aufwand, (wert) => {
+    aufwand = wert;
+    zeigeAufwand();
+  }));
+  zeigeAufwand();
 
   return el(
     'dialog',
@@ -106,13 +120,16 @@ function neueAufgabeDialog() {
             titel.focus();
             return;
           }
-          aufgabeAnlegen(titel.value.trim(), 'einmalig').catch(fehlgeschlagen);
+          aufgabeAnlegen(titel.value.trim(), 'einmalig', aufwand).catch(fehlgeschlagen);
           e.target.reset();
+          aufwand = 'klein';
+          zeigeAufwand();
         },
       },
       el('h2', {}, 'Einmalige Aufgabe'),
       el('p', { class: 'dialog-hilfe' }, 'Bleibt stehen, bis sie erledigt ist.'),
       el('label', {}, 'Was ist zu tun?', titel),
+      el('div', { class: 'dialog-zeile' }, el('span', {}, 'Aufwand'), aufwandPlatz),
       el(
         'div',
         { class: 'dialog-knoepfe' },

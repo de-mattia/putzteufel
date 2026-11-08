@@ -3,10 +3,10 @@
 
 import {
   holeZustand, abonniere, mitglied, geraetEntfernen, codeErneuern,
-  einladungsLink, einladungsCode, aufgabeAnlegen, aufgabeUmbenennen, aufgabeLoeschen,
+  einladungsLink, einladungsCode, aufgabeAnlegen, aufgabeUmbenennen, aufgabeLoeschen, aufwandSetzen,
 } from '../store.js';
 import { APP_VERSION } from '../config.js';
-import { el, fuelle, avatar, qrCode } from '../ui.js';
+import { el, fuelle, avatar, qrCode, aufwandUmschalter } from '../ui.js';
 
 const fehlgeschlagen = (fehler) => {
   console.error(fehler);
@@ -19,6 +19,13 @@ export function einstellungen(ziel) {
 
   // Bleibt über das Neuzeichnen hinweg erhalten, damit Eingaben nicht verloren gehen.
   const neuFeld = el('input', { maxlength: 80, autocomplete: 'off', placeholder: 'Neue Wochenaufgabe', 'aria-label': 'Neue Wochenaufgabe' });
+  let neuAufwand = 'klein';
+  const neuAufwandPlatz = el('span');
+  const zeigeNeuAufwand = () => fuelle(neuAufwandPlatz, aufwandUmschalter(neuAufwand, (wert) => {
+    neuAufwand = wert;
+    zeigeNeuAufwand();
+  }));
+  zeigeNeuAufwand();
   const neuForm = el(
     'form',
     {
@@ -27,12 +34,15 @@ export function einstellungen(ziel) {
         e.preventDefault();
         const titel = neuFeld.value.trim();
         if (!titel) return;
-        aufgabeAnlegen(titel, 'woche').catch(fehlgeschlagen);
+        aufgabeAnlegen(titel, 'woche', neuAufwand).catch(fehlgeschlagen);
         neuFeld.value = '';
+        neuAufwand = 'klein';
+        zeigeNeuAufwand();
       },
     },
     neuFeld,
-    el('button', { class: 'knopf knopf-primaer knopf-klein', type: 'submit' }, 'Hinzufügen'),
+    neuAufwandPlatz,
+    el('button', { class: 'knopf knopf-primaer knopf-klein', type: 'submit', title: 'Hinzufügen', 'aria-label': 'Hinzufügen' }, '+'),
   );
 
   const zeichne = () => {
@@ -50,6 +60,7 @@ export function einstellungen(ziel) {
           { class: 'zeile' },
           el('span', { class: 'zeile-titel' }, a.titel),
           el('span', { class: 'zeile-knoepfe' },
+            aufwandUmschalter(a.aufwand, (wert) => aufwandSetzen(a.id, wert).catch(fehlgeschlagen)),
             el('button', { class: 'knopf-symbol', type: 'button', title: 'Umbenennen', 'aria-label': `${a.titel} umbenennen`, onclick: () => umbenennen(a) }, '✎'),
             el('button', { class: 'knopf-symbol', type: 'button', title: 'Löschen', 'aria-label': `${a.titel} löschen`, onclick: () => loeschen(a) }, '✕')),
         )),
