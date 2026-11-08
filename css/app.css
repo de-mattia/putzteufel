@@ -522,6 +522,27 @@ select {
   width: min(12rem, 70%);
 }
 
+/* Statistik */
+
+.stat-zeile .zeile-titel {
+  flex: 0 0 7.5rem;
+}
+
+.stat-balken {
+  flex: 1;
+  height: 0.75rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--flaeche-2);
+}
+
+.stat-fuellung {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--farbe);
+}
+
 .fusszeile {
   margin-top: 2rem;
   color: var(--text-2);

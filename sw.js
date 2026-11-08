@@ -5,7 +5,7 @@
 // CACHE_VERSION bei jeder Veröffentlichung erhöhen (zusammen mit APP_VERSION in
 // js/config.js): Geöffnete Seiten – etwa der Fernseher – laden dann einmal neu.
 
-const CACHE_VERSION = 'v0.6.1';
+const CACHE_VERSION = 'v0.7.0';
 const CACHE_NAME = `putzteufel-${CACHE_VERSION}`;
 const NETZ_ZEITLIMIT_MS = 4000;
 // Das Firebase SDK liegt unter einer festen Versionsadresse und ändert sich dort nie.
@@ -29,6 +29,7 @@ const APP_SHELL = [
   'js/ansichten/board.js',
   'js/ansichten/meine.js',
   'js/ansichten/einstellungen.js',
+  'js/ansichten/statistik.js',
   'js/ansichten/start.js',
   'js/ansichten/beitreten.js',
   'js/ansichten/status.js',

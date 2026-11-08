@@ -86,6 +86,13 @@ Begründung. Technische Einzelheiten (Datenmodell, Phasen, offene Punkte) stehen
 | V41 | „Nimm dieses Bild als App-Icon.“ – Quelle `icons/putzteufel-icon-quelle.webp` (Waschbärkopf mit roten Teufelshörnern im roten Kreis, ohne Schriftzug). Alle Größen daraus; Maskable-Varianten ohne abgeschnittenen Kopf und ohne weiße Ecken; Logo auf Start- und Beitrittsseite tauschen; Quelldatei im Repo behalten. *(ersetzt V18)* |
 | V42 | „Wirf das andere Icon komplett weg, auch beim Laden der Seite.“ – alte Quelle `icons/putzteufel-original.png` und nicht mehr gebrauchte Dateien entfernen, keine Verweise übrig lassen; Startbildschirm der installierten App (Manifest-Icon und `background_color`) auf das neue Icon abstimmen. |
 
+### 2026-11-08 – direkt von Christoph
+
+| # | Vorgabe |
+| --- | --- |
+| V43 | „Du könntest auch den **Fortschrittsbalken** so machen, dass die **Länge der Aufgaben dem Aufwand** entspricht.“ |
+| V44 | „Ich hätte auch gerne noch eine **Statistik-Seite**, wo man sehen kann, wie viel jeder Einzelne gemacht hat.“ |
+
 ## 2. Designentscheidungen
 
 Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. umgesetzt.
@@ -137,6 +144,8 @@ Quelle: **V…** = Vorgabe von Christoph, **C** = von Claude vorgeschlagen bzw. 
 
 | # | Entscheidung | Warum | Quelle |
 | --- | --- | --- | --- |
+| D20c | **Fortschrittsbalken nach Aufwand:** Im Board-Kopf zählt der Text weiter die Aufgaben („3 von 6 erledigt“), der Balken ist gewichtet – eine große Aufgabe ist doppelt so lang wie eine kleine (Gewicht 2 : 1, `aufwandGewicht` in `js/store.js`). | Große Aufgaben sollen im Fortschritt mehr zählen. | V43, C |
+| D20d | **Statistik-Seite** `#/statistik` (4. Punkt der Handy-Navigation, Symbol ∑; der erste Punkt heißt dafür kurz „Aufgaben“): je Person „Diese Woche“ und „Insgesamt“ aus dem Verlauf (`log`) – Anzahl erledigt, davon groß, dazu ein Balken in der Personenfarbe, gewichtet wie der Fortschrittsbalken; sortiert nach Aufwandspunkten. Der Verlauf wird nur geladen, solange die Seite offen ist. Keine Regeländerung nötig (gekoppelte Geräte dürfen den Verlauf lesen). | Wer hat wie viel gemacht – einfach und ohne Zusatzdaten. | V44, C |
 | D20 | Board immer **dunkel**, große Schrift, drei Spalten (Offen grau, Übernommen orange, Erledigt grün), Karte mit Titel und Initiale im Farbkreis, Kopfzeile mit KW, Datum, Wechselzeitpunkt und Fortschritt (keine Uhr), unten Legende der Personen. Skaliert mit dem Bildschirm (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein CSS-Raster mit so vielen Zeilen, wie in die Höhe passen (10 bei 1080p); reichen sie nicht, entsteht von selbst eine weitere, gleich breite Kartenspalte – ohne Kompaktstufen. Titel bis zwei Zeilen. Geprüft mit 20 Karten (alle offen, gemischt, alle erledigt): alle sichtbar. Mauszeiger sichtbar. | Aus Sofa-Entfernung lesbar, ohne Scrollen. | V4, V11, V27, V34, C |
 | D20b | **Join-Knopf** in der Kopfzeile des Boards (Beschriftung „Join“ wie gewünscht): öffnet einen Dialog mit dem QR-Code des Einladungslinks; das Handy scannt ihn und wählt „Ich bin …“. Der Knopf erscheint, sobald der Code geladen ist (Geräte mit Person und Anzeigen). | Handy schnell vom Laptop/Board aus koppeln. | V31 |
 | D20a | **Drag & Drop am Board** für die **Maus** (Pointer Events, ab 6 px Bewegung); Touch geht nebenbei mit (nach 250 ms Gedrückthalten, vorher bewegt = Seite scrollt). Ablegen: Übernommen ↔ Erledigt behält die Person; nach Offen wird sie entfernt; sonst bekommt die Karte die Person des Geräts, und ein Gerät ohne Person (gemeinsamer Laptop) fragt per Avatar-Auswahl. Für die Fire-TV-Fernbedienung gibt es keine Bedienung. | Bedient wird am Laptop mit der Maus; der Fernseher zeigt nur an. | V27, V30, C |

@@ -162,13 +162,14 @@ households/{haushaltId}/geheim/beitritt             für Außenstehende nicht le
 
 | Route | Für | Inhalt |
 | --- | --- | --- |
-| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Avatar** der Person (Profilbild oder Initiale im Farbkreis), **Streifen links in der Typ-Farbe** (Wochenaufgabe graublau, einmalig gelb; Legende unten). Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** und Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy); unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein Raster mit so vielen Zeilen, wie passen (10 bei 1080p); darüber hinaus entsteht von selbst eine weitere, gleich breite Kartenspalte – ca. 20 Karten in einer Spalte bleiben so vollständig sichtbar. Wake-Lock, wo unterstützt |
+| `#/board` | Fernseher (nur anschauen), Laptop/Browser (Maus) | Dunkel, große Schrift, Spalten **Offen / Übernommen / Erledigt**. Karte = **Titel + Avatar** der Person (Profilbild oder Initiale im Farbkreis), **Streifen links in der Typ-Farbe** (Wochenaufgabe graublau, einmalig gelb; Legende unten). Kopfzeile mit **KW**, Datum, Zeitpunkt des Wechsels, **Fortschritt** (Text zählt Aufgaben, Balken nach Aufwand: groß zählt doppelt) und Knopf **„Join“** (QR-Code mit dem Einladungslink zum Scannen mit dem Handy); unten Legende der Personen. **Drag & Drop mit der Maus** (Pointer Events; Touch nach 250 ms Halten geht nebenbei): Gerät mit Person → diese Person übernimmt/erledigt; Gerät ohne Person (gemeinsamer Laptop) → Auswahl der Avatare, wenn die Karte noch niemandem gehört; Übernommen ↔ Erledigt behält die Person; nach Offen wird die Person entfernt. Skaliert mit der Bildschirmgröße (1920×1080 → 20 px Grundschrift). Jede Spalte ist ein Raster mit so vielen Zeilen, wie passen (10 bei 1080p); darüber hinaus entsteht von selbst eine weitere, gleich breite Kartenspalte – ca. 20 Karten in einer Spalte bleiben so vollständig sichtbar. Wake-Lock, wo unterstützt |
 | `#/` | Handy | **„Meine Aufgaben“**: Gruß mit Avatar (antippen = Profilbild wählen), **„Bei mir“** (✓ Erledigt / Zurück) und **„Offen“** (Übernehmen) als schlichte Listen, Zeilen mit Streifen in der Typ-Farbe. **Plus-Knopf** für eine einmalige Aufgabe (nur Titel) |
+| `#/statistik` | Handy | Je Person „Diese Woche“ und „Insgesamt“: Anzahl erledigt (davon groß) und Balken nach Aufwandspunkten (groß = 2, klein = 1), aus dem Verlauf |
 | `#/einstellungen` | Handy | **Wochenaufgaben** (✎ umbenennen, ✕ löschen, Hinzufügen), **Handy einladen** (QR-Code, Einladungscode, ein Knopf „Link teilen“ bzw. „Link kopieren“, Code erneuern), **Mitglieder**, **Geräte** (entfernen/entkoppeln), Versionsangabe |
 | `#/start` | neue Geräte | Solange Zuhause nicht eingerichtet ist: „Zuhause einrichten“ mit „Wer bist du?“. Danach nur „Ich wurde eingeladen“ mit Feld für den Einladungscode |
 | `#/beitreten` | neue Geräte | Koppelt per Einladung und fragt „Wer bist du?“ bzw. „Anzeige“ |
 
-Unten gibt es am Handy eine Navigation mit allen drei Ansichten. Auf großen Querformat-Bildschirmen ist sie im
+Unten gibt es am Handy eine Navigation: Aufgaben, Board, Statistik, Einstellungen. Auf großen Querformat-Bildschirmen ist sie im
 Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 
 ## Phasen
@@ -184,7 +185,6 @@ Board ausgeblendet (der Schriftzug „Putzteufel“ führt zurück).
 
 ## Später (bewusst nicht jetzt)
 
-- Statistik (aus dem `log`)
 - Punkte / Aufwand je Aufgabe
 - Weitere Rhythmen (z. B. alle zwei Wochen, monatlich)
 - Push-Erinnerungen

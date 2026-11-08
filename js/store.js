@@ -251,6 +251,16 @@ const aufgabeRef = (id) => fb.fs.doc(aufgabenRef(), id);
 // Aufwand: 'klein' oder 'gross'. Ältere Aufgaben ohne das Feld gelten als 'klein'.
 export const istGross = (aufgabe) => aufgabe.aufwand === 'gross';
 
+// Gewicht für Fortschrittsbalken und Statistik: eine große Aufgabe zählt doppelt.
+export const aufwandGewicht = (aufgabe) => (istGross(aufgabe) ? 2 : 1);
+
+// Verlauf (alle Erledigt-Einträge) live beobachten – nur solange die Statistik offen ist.
+export function beobachteVerlauf(beiDaten) {
+  return fb.fs.onSnapshot(fb.fs.collection(haushaltRef(), 'log'), (snap) => {
+    beiDaten(snap.docs.map((d) => d.data()));
+  }, (fehler) => console.error(fehler));
+}
+
 export function aufgabeAnlegen(titel, typ, aufwand = 'klein') {
   return fb.fs.addDoc(aufgabenRef(), {
     titel, typ, aufwand, status: 'offen', uebernommenVon: null, statusWoche: null, erstelltAm: fb.fs.serverTimestamp(),

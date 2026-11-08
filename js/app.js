@@ -3,6 +3,7 @@ import { holeZustand, abonniere, starte } from './store.js';
 import { meineAufgaben } from './ansichten/meine.js';
 import { board } from './ansichten/board.js';
 import { einstellungen } from './ansichten/einstellungen.js';
+import { statistik } from './ansichten/statistik.js';
 import { start } from './ansichten/start.js';
 import { beitreten } from './ansichten/beitreten.js';
 import { status } from './ansichten/status.js';
@@ -11,6 +12,7 @@ const routen = {
   '/': meineAufgaben,
   '/board': board,
   '/einstellungen': einstellungen,
+  '/statistik': statistik,
   '/start': start,
   '/beitreten': beitreten,
   '/status': status,

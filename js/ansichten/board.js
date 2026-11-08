@@ -2,7 +2,7 @@
 // Karten lassen sich per Drag & Drop in eine andere Spalte schieben (Maus sofort,
 // Touch nach kurzem Gedrückthalten). Die Ansicht aktualisiert sich selbst.
 
-import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen, einladungsLink } from '../store.js';
+import { holeZustand, abonniere, aktuelleWoche, mitglied, ichBin, statusSetzen, einladungsLink, aufwandGewicht } from '../store.js';
 import { karten } from '../woche.js';
 import { el, fuelle, avatar, grossMarke, datumLang, wechselText, qrCode, STATUS_NAMEN } from '../ui.js';
 
@@ -33,7 +33,7 @@ export function board(ziel) {
     const erledigt = alle.filter((k) => k.status === 'erledigt').length;
 
     fuelle(wurzel,
-      kopf(jetzt, woche, erledigt, alle.length, join.zeigen),
+      kopf(jetzt, woche, erledigt, alle, join.zeigen),
       el('div', { class: 'board-spalten' }, SPALTEN.map((status) => spalte(status, alle.filter((k) => k.status === status)))),
       fuss(zustand),
     );
@@ -148,8 +148,13 @@ export function board(ziel) {
   };
 }
 
-function kopf(jetzt, woche, erledigt, gesamt, joinZeigen) {
-  const anteil = gesamt ? Math.round((erledigt / gesamt) * 100) : 0;
+// Text zählt Aufgaben („11 von 18 erledigt“), der Balken ist nach Aufwand gewichtet
+// (eine große Aufgabe ist doppelt so lang wie eine kleine).
+function kopf(jetzt, woche, erledigt, alle, joinZeigen) {
+  const gesamt = alle.length;
+  const summe = alle.reduce((n, k) => n + aufwandGewicht(k), 0);
+  const geschafft = alle.filter((k) => k.status === 'erledigt').reduce((n, k) => n + aufwandGewicht(k), 0);
+  const anteil = summe ? Math.round((geschafft / summe) * 100) : 0;
   return el(
     'header',
     { class: 'board-kopf' },
